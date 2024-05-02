@@ -9,11 +9,11 @@ namespace PolyLink.Server.Controller;
 [Route("[controller]")]
 public partial class GameController(ISessionService sessionService) : ControllerBase
 {
-    [HttpGet("ws")]
+    [HttpGet("connect")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status101SwitchingProtocols)]
-    public async Task<IActionResult> WebSocket()
+    public async Task<IActionResult> ConnectWebSocket()
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
