@@ -73,6 +73,11 @@ public class GameServer
 
     private async Task UpdateGameLogicAsync(float delta, float time, CancellationToken cancellationToken)
     {
+        await HandleConnections(delta, cancellationToken);
+    }
+
+    private async Task HandleConnections(float delta, CancellationToken cancellationToken)
+    {
         while (newConnections.TryDequeue(out var connection))
         {
             var heartbeatTask = SendHeartbeatInLoopAsync(connection, cancellationToken);
@@ -89,7 +94,7 @@ public class GameServer
         
         await webSocketPruneTimer.UpdateAsync(delta);
     }
-    
+
     private async Task SendHeartbeatInLoopAsync(ConnectedProfile connection, CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
