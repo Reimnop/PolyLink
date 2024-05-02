@@ -1,13 +1,13 @@
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using PolyLink.Server.Model;
 using PolyLink.Server.Service;
+using PolyLink.Server.Util;
 
 namespace PolyLink.Server.Controller;
 
 [ApiController]
 [Route("[controller]")]
-public partial class ProfileController(ISessionService sessionService) : ControllerBase
+public class ProfileController(ISessionService sessionService, IWebSocketService webSocketService) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -49,7 +49,7 @@ public partial class ProfileController(ISessionService sessionService) : Control
             return BadRequest();
         
         var authorization = authHeader[0]!;
-        var match = TokenParser().Match(authorization);
+        var match = RegexHelper.TokenParser().Match(authorization);
         if (!match.Success)
             return BadRequest();
         
@@ -74,7 +74,7 @@ public partial class ProfileController(ISessionService sessionService) : Control
             return Unauthorized();
 
         var authorization = authHeader[0]!;
-        var match = TokenParser().Match(authorization);
+        var match = RegexHelper.TokenParser().Match(authorization);
         if (!match.Success)
             return BadRequest();
         
@@ -84,9 +84,7 @@ public partial class ProfileController(ISessionService sessionService) : Control
             return NotFound();
             
         await sessionService.DeleteProfileAsync(profile);
+        await webSocketService.RemoveConnectionAsync(profile);
         return Ok();
     }
-    
-    [GeneratedRegex("Bearer ([a-z0-9]{32})")]
-    private static partial Regex TokenParser();
 }

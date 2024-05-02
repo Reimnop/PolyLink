@@ -36,6 +36,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 builder.Services.AddDbContext<PolyLinkContext>(opt => opt.UseInMemoryDatabase("PolyLink"));
 builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddControllers();
@@ -49,10 +50,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Configure controllers
 app.MapControllers();
-
 app.UseHttpsRedirection();
-
 app.UseWebSockets();
-app.Run();
+
+var gameServer = new GameServer(app);
+await gameServer.RunAsync(CancellationToken.None);

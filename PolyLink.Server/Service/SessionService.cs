@@ -1,17 +1,17 @@
 using System.Security.Cryptography;
-using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using PolyLink.Server.Controller;
 using PolyLink.Server.Model;
+using PolyLink.Server.Util;
 
 namespace PolyLink.Server.Service;
 
-public partial class SessionService(PolyLinkContext context) : ISessionService
+public class SessionService(PolyLinkContext context) : ISessionService
 {
     public async Task<Profile> CreateProfileAsync(ProfileInfo profileInfo)
     {
         // Check if name is valid
-        if (!NameValidator().IsMatch(profileInfo.Name))
+        if (!RegexHelper.NameValidator().IsMatch(profileInfo.Name))
             throw new Exception("The name of the profile contains invalid characters");
         
         // Check if profile already exists
@@ -23,9 +23,7 @@ public partial class SessionService(PolyLinkContext context) : ISessionService
             Id = Random.Shared.Next(),
             Name = profileInfo.Name,
             DisplayName = profileInfo.DisplayName,
-            LoginToken = RandomNumberGenerator.GetString("abcdefghijklmnopqrstuvwxyz0123456789", 32),
-            CreatedAt = DateTime.UtcNow,
-            ExpiresIn = 300 // 5 minutes
+            LoginToken = RandomNumberGenerator.GetString("abcdefghijklmnopqrstuvwxyz0123456789", 32)
         };
         
         // Add user to database
@@ -38,37 +36,13 @@ public partial class SessionService(PolyLinkContext context) : ISessionService
     public async Task<Profile?> GetProfileByNameAsync(string name)
     {
         // Try to get profile from db
-        var profile = await context.Profiles.FirstOrDefaultAsync(x => x.Name == name);
-        if (profile == null)
-            return null;
-        
-        // Check if profile is expired
-        if (profile.CreatedAt.AddSeconds(profile.ExpiresIn) < DateTime.UtcNow)
-        {
-            context.Profiles.Remove(profile);
-            await context.SaveChangesAsync();
-            return null;
-        }
-        
-        return profile;
+        return await context.Profiles.FirstOrDefaultAsync(x => x.Name == name);
     }
 
     public async Task<Profile?> GetProfileByTokenAsync(string token)
     {
         // Try to get profile from db
-        var profile = await context.Profiles.FirstOrDefaultAsync(x => x.LoginToken == token);
-        if (profile == null)
-            return null;
-        
-        // Check if profile is expired
-        if (profile.CreatedAt.AddSeconds(profile.ExpiresIn) < DateTime.UtcNow)
-        {
-            context.Profiles.Remove(profile);
-            await context.SaveChangesAsync();
-            return null;
-        }
-        
-        return profile;
+        return await context.Profiles.FirstOrDefaultAsync(x => x.LoginToken == token);
     }
 
     public async Task DeleteProfileAsync(Profile profile)
@@ -76,7 +50,4 @@ public partial class SessionService(PolyLinkContext context) : ISessionService
         context.Profiles.Remove(profile);
         await context.SaveChangesAsync();
     }
-
-    [GeneratedRegex("^[a-z0-9_]{3,16}$")]
-    private static partial Regex NameValidator();
 }

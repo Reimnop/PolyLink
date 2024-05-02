@@ -1,13 +1,13 @@
 using System.Net.WebSockets;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using PolyLink.Server.Service;
+using PolyLink.Server.Util;
 
 namespace PolyLink.Server.Controller;
 
 [ApiController]
 [Route("[controller]")]
-public partial class GameController(ISessionService sessionService) : ControllerBase
+public class GameController(ISessionService sessionService, IWebSocketService webSocketService) : ControllerBase
 {
     [HttpGet("connect")]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -23,7 +23,7 @@ public partial class GameController(ISessionService sessionService) : Controller
                 return Unauthorized();
             
             var authorization = authHeader[0]!;
-            var match = TokenParser().Match(authorization);
+            var match = RegexHelper.TokenParser().Match(authorization);
             if (!match.Success)
                 return BadRequest();
             
@@ -33,13 +33,21 @@ public partial class GameController(ISessionService sessionService) : Controller
                 return Unauthorized();
             
             var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            await webSocket.SendAsync("The server has authenticated you~!!!"u8.ToArray(), WebSocketMessageType.Text, WebSocketMessageFlags.EndOfMessage, CancellationToken.None);
-            return new EmptyResult();
+            try
+            {
+                var tcs = new TaskCompletionSource();
+                await webSocketService.AddConnectionAsync(profileByToken, webSocket, tcs);
+                await tcs.Task;
+                return Empty;
+            }
+            catch (Exception e)
+            {
+                await webSocket.CloseAsync(WebSocketCloseStatus.InternalServerError, e.Message, CancellationToken.None);
+                webSocket.Dispose();
+                return BadRequest();
+            }
         }
         
         return BadRequest();
     }
-    
-    [GeneratedRegex("Bearer ([a-z0-9]{32})")]
-    private static partial Regex TokenParser();
 }
