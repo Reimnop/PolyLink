@@ -1,3 +1,4 @@
+using System.Net.WebSockets;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using PolyLink.Server.Service;
@@ -31,7 +32,8 @@ public partial class GameController(ISessionService sessionService) : Controller
             if (profileByToken == null)
                 return Unauthorized();
             
-            using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            await webSocket.SendAsync("The server has authenticated you~!!!"u8.ToArray(), WebSocketMessageType.Text, WebSocketMessageFlags.EndOfMessage, CancellationToken.None);
             return new EmptyResult();
         }
         
