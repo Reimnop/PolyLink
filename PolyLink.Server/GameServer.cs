@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Net.WebSockets;
+using PolyLink.Common.Packet;
 using PolyLink.Server.Model;
 using PolyLink.Server.Util;
 
@@ -13,7 +13,7 @@ public class GameServer
 
     private readonly PeriodicAsyncTimer webSocketPruneTimer;
     private readonly ConcurrentQueue<ConnectedProfile> newConnections = [];
-    private readonly List<Task> heartbeatTasks = [];
+    private readonly List<Task> clientNetworkTasks = [];
 
     public GameServer(WebApplication webApplication)
     {
@@ -66,60 +66,33 @@ public class GameServer
                 await UpdateGameLogicAsync(delta, time, cancellationToken);
             }
 
-            await Task.Delay(5, cancellationToken); // Some delay to prevent busy loop
+            await Task.Yield(); // Some delay to prevent busy loop
         }
         stopwatch.Stop();
+    }
+    
+    private async Task HandleConnections(float delta, CancellationToken cancellationToken)
+    {
+        while (newConnections.TryDequeue(out var connection))
+        {
+            var clientNetworkHandler = new ClientNetworkHandler(connection, webSocketService);
+            var networkTask = clientNetworkHandler.RunAsync(cancellationToken);
+            clientNetworkTasks.Add(networkTask);
+        }
+
+        // Make sure we don't miss any exceptions
+        foreach (var networkTask in clientNetworkTasks)
+        {
+            if (networkTask.IsFaulted)
+                throw networkTask.Exception!;
+        }
+        clientNetworkTasks.RemoveAll(task => task.IsCompleted);
+        
+        await webSocketPruneTimer.UpdateAsync(delta);
     }
 
     private async Task UpdateGameLogicAsync(float delta, float time, CancellationToken cancellationToken)
     {
         await HandleConnections(delta, cancellationToken);
-    }
-
-    private async Task HandleConnections(float delta, CancellationToken cancellationToken)
-    {
-        while (newConnections.TryDequeue(out var connection))
-        {
-            var heartbeatTask = SendHeartbeatInLoopAsync(connection, cancellationToken);
-            heartbeatTasks.Add(heartbeatTask);
-        }
-
-        // Make sure we don't miss any exceptions
-        foreach (var heartbeatTask in heartbeatTasks)
-        {
-            if (heartbeatTask.IsFaulted)
-                throw heartbeatTask.Exception!;
-        }
-        heartbeatTasks.RemoveAll(task => task.IsCompleted);
-        
-        await webSocketPruneTimer.UpdateAsync(delta);
-    }
-
-    private async Task SendHeartbeatInLoopAsync(ConnectedProfile connection, CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            await SendHeartbeatAsync(connection, cancellationToken);
-            await Task.Delay(5000, cancellationToken);
-        }
-    }
-    
-    private async Task SendHeartbeatAsync(ConnectedProfile connection, CancellationToken cancellationToken)
-    {
-        var whatToSend = "heartbeat!"u8.ToArray();
-        await connection.WebSocket.SendAsync(whatToSend, WebSocketMessageType.Text, true, cancellationToken);
-        
-        // Set timeout
-        try
-        {
-            var cts = new CancellationTokenSource();
-            var bothCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, cts.Token);
-            await connection.WebSocket.ReceiveAsync(new ArraySegment<byte>(new byte[1024]), bothCts.Token);
-            cts.CancelAfter(5000);
-        }
-        catch
-        {
-            await webSocketService.RemoveConnectionAsync(connection.Profile);
-        }
     }
 }

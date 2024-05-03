@@ -1,4 +1,4 @@
-using PolyLink.Server.Model;
+using PolyLink.Common.Model;
 
 namespace PolyLink.Server.Service;
 

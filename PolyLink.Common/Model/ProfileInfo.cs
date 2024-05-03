@@ -1,4 +1,4 @@
-namespace PolyLink.LocalTest;
+namespace PolyLink.Common.Model;
 
 public class ProfileInfo
 {

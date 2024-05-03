@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
+using PolyLink.Common.Model;
 using PolyLink.Server.Controller;
-using PolyLink.Server.Model;
 using PolyLink.Server.Util;
 
 namespace PolyLink.Server.Service;

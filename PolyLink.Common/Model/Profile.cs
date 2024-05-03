@@ -1,4 +1,4 @@
-namespace PolyLink.Server.Model;
+namespace PolyLink.Common.Model;
 
 public class Profile
 {

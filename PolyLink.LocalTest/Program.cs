@@ -1,8 +1,10 @@
 ﻿using System.Net.Http.Json;
 using System.Net.WebSockets;
-using PolyLink.LocalTest;
+using PolyLink.Common.Model;
+using PolyLink.Common.Networking;
+using PolyLink.Common.Packet;
 
-var targetUrl = "localhost:5291";
+const string targetUrl = "localhost:5291";
 
 using var httpClient = new HttpClient();
 
@@ -33,16 +35,17 @@ await ws.ConnectAsync(new Uri($"ws://{targetUrl}/Game/connect"), CancellationTok
 
 Console.WriteLine("Connected to WebSocket!");
 
+var connectionHandler = new ConnectionHandler(ws, PacketRegistry.Default);
+connectionHandler.PacketReceived = async (_, packet) =>
+{
+    if (packet is S2CHeartbeatPacket)
+    {
+        Console.WriteLine("Received heartbeat packet! Sending response...");
+        await connectionHandler.SendAsync(new C2SHeartbeatPacket());
+    }
+};
+
 while (!ws.CloseStatus.HasValue)
 {
-    var buffer = new byte[1024];
-    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-    var receivedMessage = System.Text.Encoding.UTF8.GetString(buffer, 0, result.Count);
-    Console.WriteLine($"Received message: {receivedMessage}");
-
-    if (receivedMessage == "heartbeat!")
-    {
-        Console.WriteLine("Since previous message was a heartbeat, sending a response");
-        await ws.SendAsync(new ArraySegment<byte>("response!"u8.ToArray()), WebSocketMessageType.Text, true, CancellationToken.None);
-    }
+    await connectionHandler.ReceiveAsync();
 }

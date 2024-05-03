@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
+using PolyLink.Common.Model;
+using PolyLink.Common.Networking;
 using PolyLink.Server.Model;
 
 namespace PolyLink.Server.Service;
@@ -13,7 +15,12 @@ public class WebSocketService : IWebSocketService
 
     public Task AddConnectionAsync(Profile profile, WebSocket webSocket, TaskCompletionSource tcs)
     {
-        var connection = new ConnectedProfile(profile, webSocket, tcs);
+        var connectionHandler = new ConnectionHandler(webSocket, PacketRegistry.Default)
+        {
+            ConnectionClosed = async _ => await OnConnectionClosed(profile)
+        };
+
+        var connection = new ConnectedProfile(profile, webSocket, connectionHandler, tcs);
         if (!connections.TryAdd(profile.Id, connection))
             throw new InvalidOperationException("Profile is already connected");
         ConnectionAdded?.Invoke(this, connection);
@@ -35,6 +42,11 @@ public class WebSocketService : IWebSocketService
             webSocket.Dispose();
             tcs.SetResult();
         }
+    }
+    
+    private async Task OnConnectionClosed(Profile profile)
+    {
+        await RemoveConnectionAsync(profile);
     }
 
     public async Task PruneConnectionsAsync()

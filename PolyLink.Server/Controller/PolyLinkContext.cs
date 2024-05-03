@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using PolyLink.Server.Model;
+using PolyLink.Common.Model;
 
 namespace PolyLink.Server.Controller;
 

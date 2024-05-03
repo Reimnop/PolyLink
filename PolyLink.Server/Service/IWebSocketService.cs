@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using PolyLink.Common.Model;
 using PolyLink.Server.Model;
 
 namespace PolyLink.Server.Service;

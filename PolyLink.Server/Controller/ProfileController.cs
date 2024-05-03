@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using PolyLink.Server.Model;
+using PolyLink.Common.Model;
 using PolyLink.Server.Service;
 using PolyLink.Server.Util;
 
