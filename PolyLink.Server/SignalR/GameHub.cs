@@ -4,7 +4,7 @@ using PolyLink.Server.Util;
 
 namespace PolyLink.Server.Service.SignalR;
 
-public class GameHub(IProfileRepository profileRepository, ISessionRepository sessionRepository) : Hub
+public class GameHub(IProfileRepository profileRepository, ISessionRepository sessionRepository, ILogger<GameHub> logger) : Hub
 {
     public override async Task OnConnectedAsync()
     {
@@ -51,7 +51,7 @@ public class GameHub(IProfileRepository profileRepository, ISessionRepository se
         // Add session
         await sessionRepository.AddSessionAsync(session);
         
-        Console.WriteLine($"User '{profileByToken.DisplayName}' connected");
+        logger.LogInformation("User '{}' connected", profileByToken.DisplayName);
         
         await base.OnConnectedAsync();
     }
@@ -64,7 +64,7 @@ public class GameHub(IProfileRepository profileRepository, ISessionRepository se
             return;
         await sessionRepository.RemoveSessionAsync(session);
         
-        Console.WriteLine($"User '{session.Profile.DisplayName}' disconnected");
+        logger.LogInformation("User '{}' disconnected", session.Profile.DisplayName);
         
         await base.OnDisconnectedAsync(exception);
     }
