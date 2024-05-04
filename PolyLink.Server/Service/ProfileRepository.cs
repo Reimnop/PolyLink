@@ -3,10 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using PolyLink.Common.Model;
 using PolyLink.Server.Controller;
 using PolyLink.Server.Util;
+using Profile = PolyLink.Server.Model.Profile;
 
 namespace PolyLink.Server.Service;
 
-public class SessionService(PolyLinkContext context) : ISessionService
+public class ProfileRepository(PolyLinkContext context) : IProfileRepository
 {
     public async Task<Profile> CreateProfileAsync(ProfileInfo profileInfo)
     {
@@ -20,7 +21,7 @@ public class SessionService(PolyLinkContext context) : ISessionService
         
         var profile = new Profile
         {
-            Id = Random.Shared.Next(),
+            Id = RandomNumberGenerator.GetString("abcdefghijklmnopqrstuvwxyz0123456789", 8),
             Name = profileInfo.Name,
             DisplayName = profileInfo.DisplayName,
             LoginToken = RandomNumberGenerator.GetString("abcdefghijklmnopqrstuvwxyz0123456789", 32)
@@ -35,14 +36,16 @@ public class SessionService(PolyLinkContext context) : ISessionService
 
     public async Task<Profile?> GetProfileByNameAsync(string name)
     {
-        // Try to get profile from db
-        return await context.Profiles.FirstOrDefaultAsync(x => x.Name == name);
+        return await context.Profiles
+            .Include(x => x.Session)
+            .FirstOrDefaultAsync(x => x.Name == name);
     }
 
     public async Task<Profile?> GetProfileByTokenAsync(string token)
     {
-        // Try to get profile from db
-        return await context.Profiles.FirstOrDefaultAsync(x => x.LoginToken == token);
+        return await context.Profiles
+            .Include(x => x.Session)
+            .FirstOrDefaultAsync(x => x.LoginToken == token);
     }
 
     public async Task DeleteProfileAsync(Profile profile)

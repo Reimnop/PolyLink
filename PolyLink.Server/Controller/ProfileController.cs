@@ -7,7 +7,7 @@ namespace PolyLink.Server.Controller;
 
 [ApiController]
 [Route("[controller]")]
-public class ProfileController(ISessionService sessionService, IWebSocketService webSocketService) : ControllerBase
+public class ProfileController(IProfileRepository profileRepository) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -16,7 +16,14 @@ public class ProfileController(ISessionService sessionService, IWebSocketService
     {
         try
         {
-            return Ok(await sessionService.CreateProfileAsync(profileInfo));
+            var profile = await profileRepository.CreateProfileAsync(profileInfo);
+            return Ok(new Profile
+            {
+                Id = profile.Id,
+                Name = profile.Name,
+                DisplayName = profile.DisplayName,
+                LoginToken = profile.LoginToken
+            });
         }
         catch
         {
@@ -33,7 +40,7 @@ public class ProfileController(ISessionService sessionService, IWebSocketService
     {
         if (name != null)
         {
-            var profile = await sessionService.GetProfileByNameAsync(name);
+            var profile = await profileRepository.GetProfileByNameAsync(name);
             if (profile == null)
                 return NotFound();
             return Ok(new ProfileInfo
@@ -54,11 +61,17 @@ public class ProfileController(ISessionService sessionService, IWebSocketService
             return BadRequest();
         
         var token = match.Groups[1].Value;
-        var profileByToken = await sessionService.GetProfileByTokenAsync(token);
+        var profileByToken = await profileRepository.GetProfileByTokenAsync(token);
         if (profileByToken == null)
             return Unauthorized();
         
-        return Ok(profileByToken);
+        return Ok(new Profile
+        {
+            Id = profileByToken.Id,
+            Name = profileByToken.Name,
+            DisplayName = profileByToken.DisplayName,
+            LoginToken = profileByToken.LoginToken
+        });
     }
     
     [HttpDelete]
@@ -79,12 +92,14 @@ public class ProfileController(ISessionService sessionService, IWebSocketService
             return BadRequest();
         
         var token = match.Groups[1].Value;
-        var profile = await sessionService.GetProfileByTokenAsync(token);
+        var profile = await profileRepository.GetProfileByTokenAsync(token);
         if (profile == null)
             return NotFound();
+
+        if (profile.Session != null)
+            return BadRequest();
             
-        await sessionService.DeleteProfileAsync(profile);
-        await webSocketService.RemoveConnectionAsync(profile);
+        await profileRepository.DeleteProfileAsync(profile);
         return Ok();
     }
 }

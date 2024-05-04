@@ -1,8 +1,6 @@
 ﻿using System.Net.Http.Json;
-using System.Net.WebSockets;
+using Microsoft.AspNetCore.SignalR.Client;
 using PolyLink.Common.Model;
-using PolyLink.Common.Networking;
-using PolyLink.Common.Packet;
 
 const string targetUrl = "localhost:5291";
 
@@ -26,26 +24,30 @@ if (!step1Response.IsSuccessStatusCode)
     return;
 }
 
-var profile = await step1Response.Content.ReadFromJsonAsync<Profile>();
+var profile = (await step1Response.Content.ReadFromJsonAsync<Profile>())!;
 
-Console.WriteLine("2. Connecting to WebSocket");
-var ws = new ClientWebSocket();
-ws.Options.SetRequestHeader("Authorization", $"Bearer {profile!.LoginToken}");
-await ws.ConnectAsync(new Uri($"ws://{targetUrl}/Game/connect"), CancellationToken.None);
+Console.WriteLine("Profile info:");
+Console.WriteLine($"ID: {profile.Id}");
+Console.WriteLine($"Name: {profile.Name}");
+Console.WriteLine($"Display Name: {profile.DisplayName}");
+Console.WriteLine($"Login Token: {profile.LoginToken}");
 
-Console.WriteLine("Connected to WebSocket!");
-
-var connectionHandler = new ConnectionHandler(ws, PacketRegistry.Default);
-connectionHandler.PacketReceived = async (_, packet) =>
-{
-    if (packet is S2CHeartbeatPacket)
+Console.WriteLine("2. Connecting to SignalR");
+var connection = new HubConnectionBuilder()
+    .WithUrl($"http://{targetUrl}/game", options =>
     {
-        Console.WriteLine("Received heartbeat packet! Sending response...");
-        await connectionHandler.SendAsync(new C2SHeartbeatPacket());
-    }
-};
+        options.Headers.Add("Authorization", $"Bearer {profile.LoginToken}");
+    })
+    .Build();
 
-while (!ws.CloseStatus.HasValue)
+connection.On<string, string>("ReceiveMessage", (user, message) =>
+    Console.WriteLine($"{user} says: {message}"));
+
+await connection.StartAsync();
+
+while (true)
 {
-    await connectionHandler.ReceiveAsync();
+    Console.Write("Enter message: ");
+    var message = Console.ReadLine();
+    await connection.SendAsync("SendMessage", message);
 }

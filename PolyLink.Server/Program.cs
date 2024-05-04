@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using PolyLink.Server.Controller;
 using PolyLink.Server.Service;
+using PolyLink.Server.Service.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,9 +37,10 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
 builder.Services.AddDbContext<PolyLinkContext>(opt => opt.UseInMemoryDatabase("PolyLink"));
-builder.Services.AddScoped<ISessionService, SessionService>();
+builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
+builder.Services.AddScoped<ISessionRepository, SessionRepository>();
+builder.Services.AddSignalR();
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -52,7 +54,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapControllers();
 app.UseHttpsRedirection();
-app.UseWebSockets();
+app.MapHub<GameHub>("/game");
 
 var gameServer = new GameServer(app);
 await gameServer.RunAsync(CancellationToken.None);
