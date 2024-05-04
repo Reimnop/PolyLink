@@ -4,6 +4,8 @@ namespace PolyLink.Server.Service;
 
 public class GameServer
 {
+    private delegate Task LoopedTaskFactory(float delta, float time, CancellationToken cancellationToken);
+    
     private readonly WebApplication webApplication;
 
     public GameServer(WebApplication webApplication)
@@ -13,12 +15,12 @@ public class GameServer
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
-        var gameLoop = FixedRateLoop(cancellationToken);
+        var gameLoop = FixedRateLoop(UpdateGameLogicAsync, cancellationToken);
         var webAppRun = webApplication.RunAsync(cancellationToken);
         await Task.WhenAll(gameLoop, webAppRun);
     }
 
-    private async Task FixedRateLoop(CancellationToken cancellationToken)
+    private async Task FixedRateLoop(LoopedTaskFactory loopedTaskFactory, CancellationToken cancellationToken)
     {
         const float tickRate = 0.05f; // 20 ticks per second
         
@@ -37,7 +39,7 @@ public class GameServer
                 // Update game state
                 accumulator -= tickRate;
 
-                await UpdateGameLogicAsync(delta, time, cancellationToken);
+                await loopedTaskFactory(tickRate, time, cancellationToken);
             }
 
             await Task.Yield();
