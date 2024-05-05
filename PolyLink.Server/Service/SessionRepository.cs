@@ -23,8 +23,13 @@ public class SessionRepository(PolyLinkContext context) : ISessionRepository
         return await context.Sessions.FirstOrDefaultAsync(x => x.Id == id);
     }
 
-    public Task<Session?> GetSessionByNameAsync(string name)
+    public async Task<Session?> GetSessionByNameAsync(string name)
     {
-        return Task.FromResult(context.Sessions.FirstOrDefault(x => x.Name == name));
+        return await context.Sessions.FirstOrDefaultAsync(x => x.Name == name);
+    }
+
+    public async Task<int> GetSessionCountAsync()
+    {
+        return await context.Sessions.CountAsync();
     }
 }

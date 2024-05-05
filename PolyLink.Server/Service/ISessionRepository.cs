@@ -8,4 +8,5 @@ public interface ISessionRepository
     Task RemoveSessionAsync(Session session);
     Task<Session?> GetSessionByIdAsync(string id);
     Task<Session?> GetSessionByNameAsync(string name);
+    Task<int> GetSessionCountAsync();
 }

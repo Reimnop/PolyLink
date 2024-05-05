@@ -1,23 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using PolyLink.Common.Packet;
-using PolyLink.Server.SignalR;
+using PolyLink.Server.Service;
 
 namespace PolyLink.Server.Controller;
 
 [ApiController]
 [Route("[controller]")]
-public class SessionController(IHubContext<GameHub> context) : ControllerBase
+public class SessionController(ISessionRepository sessionRepository) : ControllerBase
 {
-    [HttpPost("switchToArcade")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HttpGet("sessionCount")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> SendSwitchToArcadePacket([FromQuery] string levelId)
+    public async Task<IActionResult> GetSessionCount()
     {
-        await context.Clients.All.SendAsync("SwitchToArcade", new SwitchToArcadePacket
-        {
-            LevelId = levelId
-        });
-        return Ok();
+        return Ok(await sessionRepository.GetSessionCountAsync());
     }
 }
