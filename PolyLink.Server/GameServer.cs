@@ -36,7 +36,6 @@ public class GameServer
             accumulator += delta;
             while (accumulator >= tickRate)
             {
-                // Update game state
                 accumulator -= tickRate;
 
                 await loopedTaskFactory(tickRate, time, cancellationToken);
@@ -47,7 +46,8 @@ public class GameServer
         stopwatch.Stop();
     }
 
-    private async Task UpdateGameLogicAsync(float delta, float time, CancellationToken cancellationToken)
+    private Task UpdateGameLogicAsync(float delta, float time, CancellationToken cancellationToken)
     {
+        return Task.CompletedTask;
     }
 }

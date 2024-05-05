@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using PolyLink.Server.Model;
+using PolyLink.Server.Service;
 using PolyLink.Server.Util;
 
-namespace PolyLink.Server.Service.SignalR;
+namespace PolyLink.Server.SignalR;
 
-public class GameHub(IProfileRepository profileRepository, ISessionRepository sessionRepository, ILogger<GameHub> logger) : Hub
+public class GameHub(ISessionRepository sessionRepository, ILogger<GameHub> logger) : Hub
 {
     public override async Task OnConnectedAsync()
     {
-        // Check for token
+        // Check for name and display name
         var httpContext = Context.GetHttpContext();
         if (httpContext == null)
         {
@@ -16,24 +17,28 @@ public class GameHub(IProfileRepository profileRepository, ISessionRepository se
             return;
         }
         
-        var authHeader = httpContext.Request.Headers.Authorization;
-        if (authHeader.Count == 0)
+        var nameValues = httpContext.Request.Query["name"];
+        var displayNameValues = httpContext.Request.Query["displayName"];
+
+        var name = nameValues.Count > 0 ? nameValues[0] : null;
+        var displayName = displayNameValues.Count > 0 ? displayNameValues[0] : null;
+        
+        // Check if either name or display name is null
+        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(displayName))
         {
             Context.Abort();
             return;
         }
         
-        var authorization = authHeader[0]!;
-        var match = RegexHelper.TokenParser().Match(authorization);
-        if (!match.Success)
+        // Check if name is valid
+        if (!RegexHelper.NameValidator().IsMatch(name))
         {
             Context.Abort();
             return;
         }
         
-        var token = match.Groups[1].Value;
-        var profileByToken = await profileRepository.GetProfileByTokenAsync(token);
-        if (profileByToken == null)
+        // Check if there's an existing session
+        if (await sessionRepository.GetSessionByNameAsync(name) != null)
         {
             Context.Abort();
             return;
@@ -44,14 +49,14 @@ public class GameHub(IProfileRepository profileRepository, ISessionRepository se
         var session = new Session
         {
             Id = id,
-            ProfileId = profileByToken.Id,
-            Profile = profileByToken
+            Name = name,
+            DisplayName = displayName
         };
         
         // Add session
         await sessionRepository.AddSessionAsync(session);
         
-        logger.LogInformation("User '{}' connected", profileByToken.DisplayName);
+        logger.LogInformation("User '{}' connected", session.DisplayName);
         
         await base.OnConnectedAsync();
     }
@@ -64,19 +69,8 @@ public class GameHub(IProfileRepository profileRepository, ISessionRepository se
             return;
         await sessionRepository.RemoveSessionAsync(session);
         
-        logger.LogInformation("User '{}' disconnected", session.Profile.DisplayName);
+        logger.LogInformation("User '{}' disconnected", session.DisplayName);
         
         await base.OnDisconnectedAsync(exception);
-    }
-    
-    public async Task SendMessage(string message)
-    {
-        var id = Context.ConnectionId;
-        var session = await sessionRepository.GetSessionByIdAsync(id);
-        if (session == null)
-            return;
-        
-        // Broadcast message to all clients except sender
-        await Clients.AllExcept(id).SendAsync("ReceiveMessage", session.Profile.DisplayName, message);
     }
 }

@@ -20,8 +20,11 @@ public class SessionRepository(PolyLinkContext context) : ISessionRepository
     
     public async Task<Session?> GetSessionByIdAsync(string id)
     {
-        return await context.Sessions
-            .Include(x => x.Profile)
-            .FirstOrDefaultAsync(x => x.Id == id);
+        return await context.Sessions.FirstOrDefaultAsync(x => x.Id == id);
+    }
+
+    public Task<Session?> GetSessionByNameAsync(string name)
+    {
+        return Task.FromResult(context.Sessions.FirstOrDefault(x => x.Name == name));
     }
 }

@@ -1,6 +1,6 @@
-﻿using System.Net.Http.Json;
+﻿using System.Web;
 using Microsoft.AspNetCore.SignalR.Client;
-using PolyLink.Common.Model;
+using PolyLink.Common.Packet;
 
 const string targetUrl = "localhost:5291";
 
@@ -12,42 +12,28 @@ var profileName = Console.ReadLine();
 Console.Write("Enter your display name: ");
 var profileDisplayName = Console.ReadLine();
 
-var step1Response = await httpClient.PostAsJsonAsync($"http://{targetUrl}/Profile", new ProfileInfo
-{
-    Name = profileName!,
-    DisplayName = profileDisplayName!
-});
-
-if (!step1Response.IsSuccessStatusCode)
-{
-    Console.WriteLine("Failed to create profile!");
-    return;
-}
-
-var profile = (await step1Response.Content.ReadFromJsonAsync<Profile>())!;
-
-Console.WriteLine("Profile info:");
-Console.WriteLine($"ID: {profile.Id}");
-Console.WriteLine($"Name: {profile.Name}");
-Console.WriteLine($"Display Name: {profile.DisplayName}");
-Console.WriteLine($"Login Token: {profile.LoginToken}");
-
 Console.WriteLine("2. Connecting to SignalR");
 var connection = new HubConnectionBuilder()
-    .WithUrl($"http://{targetUrl}/game", options =>
-    {
-        options.Headers.Add("Authorization", $"Bearer {profile.LoginToken}");
-    })
+    .WithUrl($"http://{targetUrl}/game" +
+             $"?name={HttpUtility.UrlEncode(profileName)}" +
+             $"&displayName={HttpUtility.UrlEncode(profileDisplayName)}")
     .Build();
 
-connection.On<string, string>("ReceiveMessage", (user, message) =>
-    Console.WriteLine($"{user} says: {message}"));
+connection.On<SwitchToArcadePacket>("SwitchToArcade", packet =>
+{
+    Console.WriteLine($"Received SwitchToArcade packet with level ID: {packet.LevelId}");
+});
 
 await connection.StartAsync();
 
-while (true)
+Console.WriteLine("Press any key to exit");
+var stop = false;
+while (!stop && connection.State != HubConnectionState.Disconnected)
 {
-    Console.Write("Enter message: ");
-    var message = Console.ReadLine();
-    await connection.SendAsync("SendMessage", message);
+    if (Console.KeyAvailable)
+        stop = true;
+    await Task.Yield();
 }
+
+Console.WriteLine("\n3. Disconnecting from SignalR");
+await connection.StopAsync();

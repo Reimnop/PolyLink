@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using PolyLink.Server.Controller;
 using PolyLink.Server.Service;
-using PolyLink.Server.Service.SignalR;
+using PolyLink.Server.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +38,6 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddDbContext<PolyLinkContext>(opt => opt.UseInMemoryDatabase("PolyLink"));
-builder.Services.AddScoped<IProfileRepository, ProfileRepository>();
 builder.Services.AddScoped<ISessionRepository, SessionRepository>();
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
