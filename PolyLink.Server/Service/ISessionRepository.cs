@@ -9,4 +9,5 @@ public interface ISessionRepository
     Task<Session?> GetSessionByIdAsync(string id);
     Task<Session?> GetSessionByNameAsync(string name);
     Task<int> GetSessionCountAsync();
+    IAsyncEnumerable<Session> GetSessionsAsync();
 }

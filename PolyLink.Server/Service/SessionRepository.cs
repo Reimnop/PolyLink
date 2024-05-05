@@ -32,4 +32,9 @@ public class SessionRepository(PolyLinkContext context) : ISessionRepository
     {
         return await context.Sessions.CountAsync();
     }
+
+    public IAsyncEnumerable<Session> GetSessionsAsync()
+    {
+        return context.Sessions.AsAsyncEnumerable();
+    }
 }
