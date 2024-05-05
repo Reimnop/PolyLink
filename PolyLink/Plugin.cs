@@ -11,8 +11,5 @@ public class Plugin : BasePlugin
     public override void Load()
     {
         Instance = this;
-        
-        // Plugin startup logic
-        Log.LogInfo($"Plugin {PluginInfo.PLUGIN_GUID} is loaded!");
     }
 }
