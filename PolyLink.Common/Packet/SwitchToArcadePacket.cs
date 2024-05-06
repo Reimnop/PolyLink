@@ -2,5 +2,5 @@
 
 public class SwitchToArcadePacket
 {
-    public required string LevelId { get; set; }
+    public ulong LevelId { get; set; }
 }
