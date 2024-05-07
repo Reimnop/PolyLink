@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using Il2CppSystem.Collections.Generic;
 using Microsoft.AspNetCore.SignalR.Client;
 using PolyLink.Common.Packet;
+using Rewired;
 using Steamworks.Data;
 using UnityEngine;
 
@@ -20,7 +22,7 @@ public class PluginProcess : MonoBehaviour
             .WithUrl("http://localhost:5291/game?name=reimnop&displayName=Reimnop")
             .Build();
         
-        hubConnection.On<SwitchToArcadePacket>("SwitchToArcade", packet =>
+        hubConnection.On<StartGamePacket>("StartGame", packet =>
         {
             Log.Info($"Received SwitchToArcade packet with level ID: {packet.LevelId}");
             
@@ -33,11 +35,24 @@ public class PluginProcess : MonoBehaviour
                 
                 if (level == null)
                 {
-                    Log.Warn($"Level with ID {packet.LevelId} not found!");
+                    Log.Error($"Level with ID {packet.LevelId} not found!");
                     return;
                 }
+
+                VGPlayerManager.inst.players.Clear();
+                foreach (var playerInfo in packet.Players)
+                {
+                    Log.Info($"Player: {playerInfo.DisplayName}");
+                    var vgPlayerData = new VGPlayerManager.VGPlayerData
+                    {
+                        PlayerID = playerInfo.Id,
+                        ControllerID = 0
+                    };
+                    VGPlayerManager.inst.players.Add(vgPlayerData);
+                }
                 
-                GameManager2.inst.StartCoroutine(GameManager2.inst.LoadGame(level));
+                SaveManager.inst.CurrentArcadeLevel = level;
+                SceneManager.inst.LoadScene("Arcade Level");
             });
         });
 

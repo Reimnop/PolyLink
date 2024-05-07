@@ -19,7 +19,7 @@ var connection = new HubConnectionBuilder()
              $"&displayName={HttpUtility.UrlEncode(profileDisplayName)}")
     .Build();
 
-connection.On<SwitchToArcadePacket>("SwitchToArcade", packet =>
+connection.On<StartGamePacket>("SwitchToArcade", packet =>
 {
     Console.WriteLine($"Received SwitchToArcade packet with level ID: {packet.LevelId}");
 });

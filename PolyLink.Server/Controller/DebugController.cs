@@ -11,13 +11,10 @@ namespace PolyLink.Server.Controller;
 [Route("[controller]")]
 public class DebugController(IHubContext<GameHub> hubContext) : ControllerBase
 {
-    [HttpPost("broadcastSwitchToArcade")]
-    public async Task BroadcastSwitchToArcade([FromQuery] ulong levelId)
+    [HttpPost("broadcastStartGame")]
+    public async Task BroadcastStartGame([FromBody] StartGamePacket packet)
     {
-        await hubContext.Clients.All.SendAsync("SwitchToArcade", new SwitchToArcadePacket
-        {
-            LevelId = levelId
-        });
+        await hubContext.Clients.All.SendAsync("StartGame", packet);
     }
 }
 
