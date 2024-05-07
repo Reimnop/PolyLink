@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using Il2CppSystem.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.SignalR.Client;
 using PolyLink.Common.Packet;
-using Rewired;
+using PolyLink.Util;
 using Steamworks.Data;
 using UnityEngine;
 
@@ -39,6 +39,9 @@ public class PluginProcess : MonoBehaviour
                     return;
                 }
 
+                var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
+                multiplayerManager.SetData(packet.LocalPlayerId, packet.Players);
+
                 VGPlayerManager.inst.players.Clear();
                 foreach (var playerInfo in packet.Players)
                 {
@@ -46,13 +49,33 @@ public class PluginProcess : MonoBehaviour
                     var vgPlayerData = new VGPlayerManager.VGPlayerData
                     {
                         PlayerID = playerInfo.Id,
-                        ControllerID = 0
+                        ControllerID = packet.LocalPlayerId == playerInfo.Id ? 0 : -1
                     };
                     VGPlayerManager.inst.players.Add(vgPlayerData);
                 }
                 
                 SaveManager.inst.CurrentArcadeLevel = level;
                 SceneManager.inst.LoadScene("Arcade Level");
+            });
+        });
+        
+        hubConnection.On<HurtPlayerPacket>("HurtPlayer", packet =>
+        {
+            Log.Info("Received HurtPlayer packet");
+            
+            actions.Enqueue(() =>
+            {
+                var playerData = VGPlayerManager.inst.players
+                    .ToEnumerable()
+                    .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
+                if (playerData == null)
+                {
+                    Log.Error("Player not found!");
+                    return;
+                }
+
+                var player = playerData.PlayerObject;
+                player.PlayerHit(); 
             });
         });
 
