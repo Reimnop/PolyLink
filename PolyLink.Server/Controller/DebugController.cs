@@ -17,10 +17,16 @@ public class DebugController(IHubContext<GameHub> hubContext) : ControllerBase
         await hubContext.Clients.All.SendAsync("StartGame", packet);
     }
     
-    [HttpPost("broadcastHurtPlayer")]
-    public async Task BroadcastHurtPlayer([FromBody] HurtPlayerPacket packet)
+    [HttpPost("broadcastSetPlayerHealth")]
+    public async Task BroadcastHurtPlayer([FromBody] SetPlayerHealthPacket packet)
     {
-        await hubContext.Clients.All.SendAsync("HurtPlayer", packet);
+        await hubContext.Clients.All.SendAsync("SetPlayerHealth", packet);
+    }
+    
+    [HttpPost("broadcastKillPlayer")]
+    public async Task BroadcastKillPlayer([FromBody] KillPlayerPacket packet)
+    {
+        await hubContext.Clients.All.SendAsync("KillPlayer", packet);
     }
 }
 

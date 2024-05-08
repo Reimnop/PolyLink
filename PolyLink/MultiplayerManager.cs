@@ -18,4 +18,9 @@ public class MultiplayerManager
         foreach (var player in players)
             this.players[player.Id] = player;
     }
+    
+    public PlayerInfo? GetPlayer(int playerId)
+    {
+        return players.GetValueOrDefault(playerId);
+    }
 }

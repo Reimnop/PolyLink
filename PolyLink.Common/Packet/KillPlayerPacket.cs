@@ -1,6 +1,6 @@
 namespace PolyLink.Common.Packet;
 
-public class HurtPlayerPacket
+public class KillPlayerPacket
 {
     public int PlayerId { get; set; }
 }

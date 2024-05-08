@@ -6,6 +6,7 @@ using PolyLink.Common.Packet;
 using PolyLink.Util;
 using Steamworks.Data;
 using UnityEngine;
+using UnityEngine.Playables;
 
 namespace PolyLink;
 
@@ -59,9 +60,9 @@ public class PluginProcess : MonoBehaviour
             });
         });
         
-        hubConnection.On<HurtPlayerPacket>("HurtPlayer", packet =>
+        hubConnection.On<SetPlayerHealthPacket>("SetPlayerHealth", packet =>
         {
-            Log.Info("Received HurtPlayer packet");
+            Log.Info("Received SetPlayerHealth packet");
             
             actions.Enqueue(() =>
             {
@@ -75,7 +76,47 @@ public class PluginProcess : MonoBehaviour
                 }
 
                 var player = playerData.PlayerObject;
-                player.PlayerHit(); 
+                
+                // Set new player health
+                var oldHealth = player.Health;
+                player.Health = packet.Health;
+                
+                if (oldHealth > packet.Health)
+                {
+                    // pidge please fix your naming conventions
+                    player.playerHitEvent?.Invoke(player.Health, player.Player_Wrapper.position);
+
+                    if (packet.PlayHurtAnimation)
+                    {
+                        player.StartHurtDecay();
+                        AudioManager.Inst.ApplyLowPass(0.05f, 0.4f, 1.0f);
+                        AudioManager.Inst.PlaySound("HurtPlayer");
+                        player.PlayerHitAnimation();
+                    }
+                }
+            });
+        });
+
+        hubConnection.On<KillPlayerPacket>("KillPlayer", packet =>
+        {
+            Log.Info("Received KillPlayer packet");
+            
+            actions.Enqueue(() =>
+            {
+                var playerData = VGPlayerManager.inst.players
+                    .ToEnumerable()
+                    .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
+                if (playerData == null)
+                {
+                    Log.Error("Player not found!");
+                    return;
+                }
+
+                var player = playerData.PlayerObject;
+                player.Health = 0;
+                player.playerDeathEvent?.Invoke(player.Player_Wrapper.position);
+                player.PlayerDeath();
+                player.PlayerDeathAnimation();
             });
         });
 
