@@ -84,7 +84,7 @@ public class PluginProcess : MonoBehaviour
                 if (oldHealth > packet.Health)
                 {
                     // pidge please fix your naming conventions
-                    player.playerHitEvent?.Invoke(player.Health, player.Player_Wrapper.position);
+                    player.HitEvent?.Invoke(player.Health, player.Player_Wrapper.position);
 
                     if (packet.PlayHurtAnimation)
                     {
@@ -114,7 +114,10 @@ public class PluginProcess : MonoBehaviour
 
                 var player = playerData.PlayerObject;
                 player.Health = 0;
-                player.playerDeathEvent?.Invoke(player.Player_Wrapper.position);
+                
+                // yes pidge, your naming conventions are still bad
+                // please fix them asap
+                player.DeathEvent?.Invoke(player.Player_Wrapper.position);
                 player.PlayerDeath();
                 player.PlayerDeathAnimation();
             });
