@@ -28,6 +28,12 @@ public class DebugController(IHubContext<GameHub> hubContext) : ControllerBase
     {
         await hubContext.Clients.All.SendAsync("KillPlayer", packet);
     }
+    
+    [HttpPost("broadcastRewindToCheckpoint")]
+    public async Task BroadcastRewindToCheckpoint([FromBody] RewindToCheckpointPacket packet)
+    {
+        await hubContext.Clients.All.SendAsync("RewindToCheckpoint", packet);
+    }
 }
 
 #endif

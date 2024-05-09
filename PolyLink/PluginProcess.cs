@@ -29,7 +29,7 @@ public class PluginProcess : MonoBehaviour
             
             actions.Enqueue(() =>
             {
-                var level = ArcadeLevelDataManager.inst.GetSteamLevel(new PublishedFileId
+                var level = ArcadeLevelDataManager.Inst.GetSteamLevel(new PublishedFileId
                 {
                     Value = packet.LevelId
                 });
@@ -43,7 +43,7 @@ public class PluginProcess : MonoBehaviour
                 var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
                 multiplayerManager.SetData(packet.LocalPlayerId, packet.Players);
 
-                VGPlayerManager.inst.players.Clear();
+                VGPlayerManager.Inst.players.Clear();
                 foreach (var playerInfo in packet.Players)
                 {
                     Log.Info($"Player: {playerInfo.DisplayName}");
@@ -52,11 +52,11 @@ public class PluginProcess : MonoBehaviour
                         PlayerID = playerInfo.Id,
                         ControllerID = packet.LocalPlayerId == playerInfo.Id ? 0 : -1
                     };
-                    VGPlayerManager.inst.players.Add(vgPlayerData);
+                    VGPlayerManager.Inst.players.Add(vgPlayerData);
                 }
                 
-                SaveManager.inst.CurrentArcadeLevel = level;
-                SceneManager.inst.LoadScene("Arcade Level");
+                SaveManager.Inst.CurrentArcadeLevel = level;
+                SceneManager.Inst.LoadScene("Arcade Level");
             });
         });
         
@@ -66,7 +66,7 @@ public class PluginProcess : MonoBehaviour
             
             actions.Enqueue(() =>
             {
-                var playerData = VGPlayerManager.inst.players
+                var playerData = VGPlayerManager.Inst.players
                     .ToEnumerable()
                     .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
                 if (playerData == null)
@@ -103,7 +103,7 @@ public class PluginProcess : MonoBehaviour
             
             actions.Enqueue(() =>
             {
-                var playerData = VGPlayerManager.inst.players
+                var playerData = VGPlayerManager.Inst.players
                     .ToEnumerable()
                     .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
                 if (playerData == null)
@@ -120,6 +120,16 @@ public class PluginProcess : MonoBehaviour
                 player.DeathEvent?.Invoke(player.Player_Wrapper.position);
                 player.PlayerDeath();
                 player.PlayerDeathAnimation();
+            });
+        });
+
+        hubConnection.On<RewindToCheckpointPacket>("RewindToCheckpoint", packet =>
+        {
+            Log.Info("Received RewindToCheckpoint packet");
+            
+            actions.Enqueue(() =>
+            {
+                GameManager2.Inst.RewindToCheckpoint(packet.CheckpointIndex);
             });
         });
 

@@ -8,17 +8,15 @@ public class VGPlayerPatch
 {
     [HarmonyPatch(nameof(VGPlayer.OnChildTriggerEnter))]
     [HarmonyPrefix]
-    public static bool CancelPlayerTriggerEnter(ref VGPlayer __instance)
+    public static bool CancelPlayerTriggerEnter()
     {
-        var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
-        return multiplayerManager.LocalPlayerId == __instance.PlayerID;
+        return false;
     }
     
     [HarmonyPatch(nameof(VGPlayer.OnChildTriggerStay))]
     [HarmonyPrefix]
-    public static bool CancelPlayerTriggerStay(ref VGPlayer __instance)
+    public static bool CancelPlayerTriggerStay()
     {
-        var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
-        return multiplayerManager.LocalPlayerId == __instance.PlayerID;
+        return false;
     }
 }
