@@ -129,7 +129,7 @@ public class PluginProcess : MonoBehaviour
             
             actions.Enqueue(() =>
             {
-                GameManager2.Inst.RewindToCheckpoint(packet.CheckpointIndex);
+                GameManager.Inst.RewindToCheckpoint(packet.CheckpointIndex);
             });
         });
 
