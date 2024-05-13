@@ -34,7 +34,7 @@ public class GameManagerPatch
             if (checkpointIndexToActivate != -1)
             {
                 __instance.playingCheckpointAnimation = true;
-                // VGPlayerManager.Inst.RespawnPlayers();
+                VGPlayerManager.Inst.RespawnPlayers();
                 __instance.StartCoroutine(__instance.PlayCheckpointAnimation(checkpointIndexToActivate));
                 CheckpointActivated?.Invoke(checkpointIndexToActivate);
             }
