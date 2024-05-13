@@ -25,7 +25,7 @@ public class PluginProcess : MonoBehaviour
         
         hubConnection.On<StartGamePacket>("StartGame", packet =>
         {
-            Log.Info($"Received SwitchToArcade packet with level ID: {packet.LevelId}");
+            Log.Info($"Received StartGame packet with level ID: {packet.LevelId}");
             
             actions.Enqueue(() =>
             {
