@@ -1,4 +1,4 @@
-namespace PolyLink.Common.Packet.S2C;
+namespace PolyLink.Common.Packet;
 
 public class RewindToCheckpointPacket
 {

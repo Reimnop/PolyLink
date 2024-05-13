@@ -1,6 +1,6 @@
 ﻿using PolyLink.Common.Data;
 
-namespace PolyLink.Common.Packet.S2C;
+namespace PolyLink.Common.Packet;
 
 public class StartGamePacket
 {

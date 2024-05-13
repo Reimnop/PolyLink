@@ -1,4 +1,4 @@
-namespace PolyLink.Common.Packet.C2S;
+namespace PolyLink.Common.Packet;
 
 public class ActivateCheckpointPacket
 {

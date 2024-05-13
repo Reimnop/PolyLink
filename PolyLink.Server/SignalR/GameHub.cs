@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using PolyLink.Common.Packet;
 using PolyLink.Server.Model;
 using PolyLink.Server.Service;
 using PolyLink.Server.Util;
@@ -56,7 +57,7 @@ public class GameHub(ISessionRepository sessionRepository, ILogger<GameHub> logg
         // Add session
         await sessionRepository.AddSessionAsync(session);
         
-        logger.LogInformation("User '{}' connected", session.DisplayName);
+        logger.LogInformation("Player '{}' connected", session.DisplayName);
         
         await base.OnConnectedAsync();
     }
@@ -69,8 +70,19 @@ public class GameHub(ISessionRepository sessionRepository, ILogger<GameHub> logg
             return;
         await sessionRepository.RemoveSessionAsync(session);
         
-        logger.LogInformation("User '{}' disconnected", session.DisplayName);
+        logger.LogInformation("Player '{}' disconnected", session.DisplayName);
         
         await base.OnDisconnectedAsync(exception);
+    }
+    
+    public async Task ActivateCheckpoint(ActivateCheckpointPacket packet)
+    {
+        var session = await sessionRepository.GetSessionByIdAsync(Context.ConnectionId);
+        if (session == null)
+            return;
+        logger.LogInformation("Player '{}' activated checkpoint index {}", session.DisplayName, packet.CheckpointIndex);
+        
+        // Broadcast to all clients except the sender
+        await Clients.Others.SendAsync("ActivateCheckpoint", packet);
     }
 }

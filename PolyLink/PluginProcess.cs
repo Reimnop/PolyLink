@@ -2,7 +2,8 @@
 using System.Collections.Concurrent;
 using System.Linq;
 using Microsoft.AspNetCore.SignalR.Client;
-using PolyLink.Common.Packet.S2C;
+using PolyLink.Common.Packet;
+using PolyLink.Patch;
 using PolyLink.Util;
 using Steamworks.Data;
 using UnityEngine;
@@ -135,6 +136,16 @@ public class PluginProcess : MonoBehaviour
 
         hubConnection.StartAsync().Wait();
         Log.Info("SignalR connected!");
+        
+        // Initialize events
+        GameManagerPatch.CheckpointActivated += checkpointIndex =>
+        {
+            Log.Info($"Checkpoint activated: {checkpointIndex}");
+            hubConnection.SendAsync("ActivateCheckpoint", new ActivateCheckpointPacket
+            {
+                CheckpointIndex = checkpointIndex
+            });
+        };
     }
 
     private void Update()

@@ -14,7 +14,7 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <GamePath>C:\Program Files (x86)\Steam\steamapps\common\Project Arrhythmia</GamePath>
+    <GamePath>G:\SteamLibrary\steamapps\common\Project Arrhythmia</GamePath>
   </PropertyGroup>
 
   <ItemGroup>
