@@ -1,6 +1,6 @@
 ﻿using System.Web;
 using Microsoft.AspNetCore.SignalR.Client;
-using PolyLink.Common.Packet;
+using PolyLink.Common.Packet.S2C;
 
 const string targetUrl = "localhost:5291";
 

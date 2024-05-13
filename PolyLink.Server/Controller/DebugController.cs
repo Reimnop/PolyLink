@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using PolyLink.Common.Packet;
+using PolyLink.Common.Packet.S2C;
 using PolyLink.Server.SignalR;
 
 namespace PolyLink.Server.Controller;

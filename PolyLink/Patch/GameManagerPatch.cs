@@ -1,11 +1,16 @@
+using System;
 using HarmonyLib;
 using PolyLink.Util;
 
 namespace PolyLink.Patch;
 
+public delegate void CheckpointActivatedEventHandler(int checkpointIndex);
+
 [HarmonyPatch(typeof(GameManager))]
 public class GameManagerPatch
 {
+    public static event CheckpointActivatedEventHandler? CheckpointActivated;
+    
     [HarmonyPatch(nameof(GameManager.CheckpointCheck))]
     [HarmonyPrefix]
     public static bool CancelCheckpoint(ref GameManager __instance)
@@ -29,8 +34,9 @@ public class GameManagerPatch
             if (checkpointIndexToActivate != -1)
             {
                 __instance.playingCheckpointAnimation = true;
-                VGPlayerManager.Inst.RespawnPlayers();
+                // VGPlayerManager.Inst.RespawnPlayers();
                 __instance.StartCoroutine(__instance.PlayCheckpointAnimation(checkpointIndexToActivate));
+                CheckpointActivated?.Invoke(checkpointIndexToActivate);
             }
         }
         return false;

@@ -1,4 +1,4 @@
-namespace PolyLink.Common.Packet;
+namespace PolyLink.Common.Packet.S2C;
 
 public class SetPlayerHealthPacket
 {
