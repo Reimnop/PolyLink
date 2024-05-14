@@ -85,4 +85,18 @@ public class GameHub(ISessionRepository sessionRepository, ILogger<GameHub> logg
         // Broadcast to all clients except the sender
         await Clients.Others.SendAsync("ActivateCheckpoint", packet);
     }
+
+    public async Task UpdatePlayerPosition(C2SUpdatePlayerPositionPacket packet)
+    {
+        var session = await sessionRepository.GetSessionByIdAsync(Context.ConnectionId);
+        if (session == null)
+            return;
+        logger.LogInformation("Player '{}' updated position to {}", session.DisplayName, packet.Position);
+        
+        // Broadcast to all clients except the sender
+        await Clients.Others.SendAsync("UpdatePlayerPosition", new S2CUpdatePlayerPositionPacket()
+        {
+            PlayerId = // TODO: Make game manager to store player id
+        });
+    }
 }

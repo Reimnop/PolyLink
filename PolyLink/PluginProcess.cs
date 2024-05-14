@@ -8,6 +8,7 @@ using PolyLink.Util;
 using Steamworks.Data;
 using UnityEngine;
 using UnityEngine.Playables;
+using Vector3 = System.Numerics.Vector3;
 
 namespace PolyLink;
 
@@ -140,7 +141,6 @@ public class PluginProcess : MonoBehaviour
         // Initialize events
         GameManagerPatch.CheckpointCrossed += checkpointIndex =>
         {
-            Log.Info($"Checkpoint activated: {checkpointIndex}");
             hubConnection.SendAsync("ActivateCheckpoint", new ActivateCheckpointPacket
             {
                 CheckpointIndex = checkpointIndex
@@ -152,5 +152,20 @@ public class PluginProcess : MonoBehaviour
     {
         while (actions.TryDequeue(out var action))
             action();
+        
+        // Sync player position
+        // Get local player
+        var localPlayer = VGPlayerManager.Inst.players
+            .ToEnumerable()
+            .FirstOrDefault(x => x.PlayerID == LazySingleton<MultiplayerManager>.Instance.LocalPlayerId);
+        if (localPlayer == null)
+            return;
+        
+        // Send player position
+        var unityPosition = localPlayer.PlayerObject.Player_Wrapper.position;
+        hubConnection.SendAsync("UpdatePlayerPosition", new C2SUpdatePlayerPositionPacket
+        {
+            Position = new Vector3(unityPosition.x, unityPosition.y, unityPosition.z)
+        });
     }
 }
