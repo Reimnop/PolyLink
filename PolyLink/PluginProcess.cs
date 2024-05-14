@@ -138,7 +138,7 @@ public class PluginProcess : MonoBehaviour
         Log.Info("SignalR connected!");
         
         // Initialize events
-        GameManagerPatch.CheckpointActivated += checkpointIndex =>
+        GameManagerPatch.CheckpointCrossed += checkpointIndex =>
         {
             Log.Info($"Checkpoint activated: {checkpointIndex}");
             hubConnection.SendAsync("ActivateCheckpoint", new ActivateCheckpointPacket
