@@ -33,9 +33,6 @@ public class GameManagerPatch
             
             if (crossedCheckpointIndex != -1)
             {
-                // __instance.playingCheckpointAnimation = true;
-                // VGPlayerManager.Inst.RespawnPlayers();
-                // __instance.StartCoroutine(__instance.PlayCheckpointAnimation(checkpointIndexToActivate));
                 CheckpointCrossed?.Invoke(crossedCheckpointIndex);
             }
         }

@@ -7,8 +7,6 @@ using PolyLink.Patch;
 using PolyLink.Util;
 using Steamworks.Data;
 using UnityEngine;
-using UnityEngine.Playables;
-using Vector3 = System.Numerics.Vector3;
 
 namespace PolyLink;
 
@@ -134,6 +132,19 @@ public class PluginProcess : MonoBehaviour
                 GameManager.Inst.RewindToCheckpoint(packet.CheckpointIndex);
             });
         });
+        
+        hubConnection.On<ActivateCheckpointPacket>("ActivateCheckpoint", packet =>
+        {
+            Log.Info("Received ActivateCheckpoint packet");
+            
+            actions.Enqueue(() =>
+            {
+                var gameManager = GameManager.Inst;
+                if (gameManager.checkpointsActivated[packet.CheckpointIndex])
+                    return;
+                ActivateCheckpoint(packet.CheckpointIndex);
+            });
+        });
 
         hubConnection.StartAsync().Wait();
         Log.Info("SignalR connected!");
@@ -141,11 +152,21 @@ public class PluginProcess : MonoBehaviour
         // Initialize events
         GameManagerPatch.CheckpointCrossed += checkpointIndex =>
         {
+            Log.Info($"Checkpoint crossed: {checkpointIndex}");
+            ActivateCheckpoint(checkpointIndex);
             hubConnection.SendAsync("ActivateCheckpoint", new ActivateCheckpointPacket
             {
                 CheckpointIndex = checkpointIndex
             });
         };
+    }
+
+    private void ActivateCheckpoint(int checkpointIndex)
+    {
+        var gameManager = GameManager.Inst;
+        gameManager.playingCheckpointAnimation = true;
+        VGPlayerManager.Inst.RespawnPlayers();
+        gameManager.StartCoroutine(gameManager.PlayCheckpointAnimation(checkpointIndex));
     }
 
     private void Update()
@@ -160,12 +181,15 @@ public class PluginProcess : MonoBehaviour
             .FirstOrDefault(x => x.PlayerID == LazySingleton<MultiplayerManager>.Instance.LocalPlayerId);
         if (localPlayer == null)
             return;
+        if (localPlayer.PlayerObject == null)
+            return;
         
         // Send player position
-        var unityPosition = localPlayer.PlayerObject.Player_Wrapper.position;
+        var position = localPlayer.PlayerObject.Player_Wrapper.position;
         hubConnection.SendAsync("UpdatePlayerPosition", new C2SUpdatePlayerPositionPacket
         {
-            Position = new Vector3(unityPosition.x, unityPosition.y, unityPosition.z)
+            X = position.x,
+            Y = position.y
         });
     }
 }

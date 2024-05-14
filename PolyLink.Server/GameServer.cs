@@ -46,8 +46,9 @@ public class GameServer
         stopwatch.Stop();
     }
 
-    private Task UpdateGameLogicAsync(float delta, float time, CancellationToken cancellationToken)
+    private async Task UpdateGameLogicAsync(float delta, float time, CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        var gameService = webApplication.Services.GetRequiredService<IGameService>();
+        await gameService.TickAsync(delta, time, cancellationToken);
     }
 }

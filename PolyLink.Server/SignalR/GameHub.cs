@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using System.Numerics;
+using Microsoft.AspNetCore.SignalR;
 using PolyLink.Common.Packet;
 using PolyLink.Server.Model;
 using PolyLink.Server.Service;
@@ -6,7 +7,7 @@ using PolyLink.Server.Util;
 
 namespace PolyLink.Server.SignalR;
 
-public class GameHub(ISessionRepository sessionRepository, ILogger<GameHub> logger) : Hub
+public class GameHub(ISessionRepository sessionRepository, IGameService gameService, ILogger<GameHub> logger) : Hub
 {
     public override async Task OnConnectedAsync()
     {
@@ -77,13 +78,7 @@ public class GameHub(ISessionRepository sessionRepository, ILogger<GameHub> logg
     
     public async Task ActivateCheckpoint(ActivateCheckpointPacket packet)
     {
-        var session = await sessionRepository.GetSessionByIdAsync(Context.ConnectionId);
-        if (session == null)
-            return;
-        logger.LogInformation("Player '{}' activated checkpoint index {}", session.DisplayName, packet.CheckpointIndex);
-        
-        // Broadcast to all clients except the sender
-        await Clients.Others.SendAsync("ActivateCheckpoint", packet);
+        await gameService.ActivateCheckpointAsync(packet.CheckpointIndex);
     }
 
     public async Task UpdatePlayerPosition(C2SUpdatePlayerPositionPacket packet)
@@ -91,12 +86,12 @@ public class GameHub(ISessionRepository sessionRepository, ILogger<GameHub> logg
         var session = await sessionRepository.GetSessionByIdAsync(Context.ConnectionId);
         if (session == null)
             return;
-        logger.LogInformation("Player '{}' updated position to {}", session.DisplayName, packet.Position);
         
-        // Broadcast to all clients except the sender
-        await Clients.Others.SendAsync("UpdatePlayerPosition", new S2CUpdatePlayerPositionPacket()
-        {
-            PlayerId = // TODO: Make game manager to store player id
-        });
+        // Get player to update position
+        var player = await gameService.GetPlayerFromSessionAsync(session.Id);
+        if (player == null)
+            return;
+        
+        await gameService.UpdatePlayerPositionAsync(player.PlayerId, new Vector2(packet.X, packet.Y));
     }
 }

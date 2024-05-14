@@ -7,7 +7,7 @@ namespace PolyLink.Server.Controller;
 [Route("[controller]")]
 public class SessionController(ISessionRepository sessionRepository) : ControllerBase
 {
-    [HttpGet("count")]
+    [HttpGet("Count")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSessionCount()
     {

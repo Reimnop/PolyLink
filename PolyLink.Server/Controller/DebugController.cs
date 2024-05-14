@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using PolyLink.Common.Packet;
-using PolyLink.Server.SignalR;
+using PolyLink.Server.Service;
 
 namespace PolyLink.Server.Controller;
 
@@ -9,30 +7,18 @@ namespace PolyLink.Server.Controller;
 
 [ApiController]
 [Route("[controller]")]
-public class DebugController(IHubContext<GameHub> hubContext) : ControllerBase
+public class DebugController(ISessionRepository sessionRepository, IGameService gameService) : ControllerBase
 {
-    [HttpPost("broadcastStartGame")]
-    public async Task BroadcastStartGame([FromBody] StartGamePacket packet)
+    [HttpPost("StartGame")]
+    public async Task StartGame([FromQuery] ulong levelId)
     {
-        await hubContext.Clients.All.SendAsync("StartGame", packet);
+        await gameService.StartGameAsync(sessionRepository.GetSessionsAsync().ToEnumerable(), levelId);
     }
     
-    [HttpPost("broadcastSetPlayerHealth")]
-    public async Task BroadcastHurtPlayer([FromBody] SetPlayerHealthPacket packet)
+    [HttpPost("StopGame")]
+    public async Task StopGame()
     {
-        await hubContext.Clients.All.SendAsync("SetPlayerHealth", packet);
-    }
-    
-    [HttpPost("broadcastKillPlayer")]
-    public async Task BroadcastKillPlayer([FromBody] KillPlayerPacket packet)
-    {
-        await hubContext.Clients.All.SendAsync("KillPlayer", packet);
-    }
-    
-    [HttpPost("broadcastRewindToCheckpoint")]
-    public async Task BroadcastRewindToCheckpoint([FromBody] RewindToCheckpointPacket packet)
-    {
-        await hubContext.Clients.All.SendAsync("RewindToCheckpoint", packet);
+        await gameService.StopGameAsync();
     }
 }
 
