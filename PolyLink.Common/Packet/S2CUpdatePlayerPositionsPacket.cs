@@ -1,8 +1,8 @@
-using PolyLink.Common.Data;
-
 namespace PolyLink.Common.Packet;
 
-public class S2CUpdatePlayerPositionsPacket
+public class S2CUpdatePlayerPositionPacket
 {
-    public ICollection<PlayerPosition> PlayerPositions { get; set; }
+    public int PlayerId { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
 }

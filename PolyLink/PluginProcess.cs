@@ -76,24 +76,7 @@ public class PluginProcess : MonoBehaviour
                 }
 
                 var player = playerData.PlayerObject;
-                
-                // Set new player health
-                var oldHealth = player.Health;
-                player.Health = packet.Health;
-                
-                if (oldHealth > packet.Health)
-                {
-                    // pidge please fix your naming conventions
-                    player.HitEvent?.Invoke(player.Health, player.Player_Wrapper.position);
-
-                    if (packet.PlayHurtAnimation)
-                    {
-                        player.StartHurtDecay();
-                        AudioManager.Inst.ApplyLowPass(0.05f, 0.4f, 1.0f);
-                        AudioManager.Inst.PlaySound("HurtPlayer");
-                        player.PlayerHitAnimation();
-                    }
-                }
+                SetPlayerHealth(player, packet.Health, packet.PlayHurtAnimation);
             });
         });
 
@@ -146,6 +129,33 @@ public class PluginProcess : MonoBehaviour
             });
         });
 
+        hubConnection.On<S2CUpdatePlayerPositionPacket>("UpdatePlayerPosition", packet =>
+        {
+            // Log.Info("Received UpdatePlayerPosition packet");
+            
+            actions.Enqueue(() =>
+            {
+                // Skip if player id is local player
+                var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
+                if (packet.PlayerId == multiplayerManager.LocalPlayerId)
+                    return;
+                
+                var playerData = VGPlayerManager.Inst.players
+                    .ToEnumerable()
+                    .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
+                
+                if (playerData == null)
+                {
+                    Log.Error("Player not found!");
+                    return;
+                }
+                
+                var player = playerData.PlayerObject;
+                var oldPosition = player.Player_Wrapper.position;
+                player.Player_Wrapper.position = new Vector3(packet.X, packet.Y, oldPosition.z);
+            });
+        });
+
         hubConnection.StartAsync().Wait();
         Log.Info("SignalR connected!");
         
@@ -159,14 +169,19 @@ public class PluginProcess : MonoBehaviour
                 CheckpointIndex = checkpointIndex
             });
         };
-    }
 
-    private void ActivateCheckpoint(int checkpointIndex)
-    {
-        var gameManager = GameManager.Inst;
-        gameManager.playingCheckpointAnimation = true;
-        VGPlayerManager.Inst.RespawnPlayers();
-        gameManager.StartCoroutine(gameManager.PlayCheckpointAnimation(checkpointIndex));
+        VGPlayerPatch.PlayerCollide += player =>
+        {
+            var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
+            if (multiplayerManager.LocalPlayerId != player.PlayerID)
+                return;
+            
+            // Hurt player
+            SetPlayerHealth(player, player.Health - 1, true);
+            
+            // Send player hurt event
+            hubConnection.SendAsync("HurtPlayer");
+        };
     }
 
     private void Update()
@@ -191,5 +206,34 @@ public class PluginProcess : MonoBehaviour
             X = position.x,
             Y = position.y
         });
+    }
+    
+    private void ActivateCheckpoint(int checkpointIndex)
+    {
+        var gameManager = GameManager.Inst;
+        gameManager.playingCheckpointAnimation = true;
+        VGPlayerManager.Inst.RespawnPlayers();
+        gameManager.StartCoroutine(gameManager.PlayCheckpointAnimation(checkpointIndex));
+    }
+
+    private void SetPlayerHealth(VGPlayer player, int newHealth, bool playHurtAnimation)
+    {
+        // Set new player health
+        var oldHealth = player.Health;
+        player.Health = newHealth;
+                
+        if (oldHealth > newHealth)
+        {
+            // pidge please fix your naming conventions
+            player.HitEvent?.Invoke(player.Health, player.Player_Wrapper.position);
+
+            if (playHurtAnimation)
+            {
+                player.StartHurtDecay();
+                AudioManager.Inst.ApplyLowPass(0.05f, 0.4f, 1.0f);
+                AudioManager.Inst.PlaySound("HurtPlayer");
+                player.PlayerHitAnimation();
+            }
+        }
     }
 }

@@ -78,6 +78,7 @@ public class GameHub(ISessionRepository sessionRepository, IGameService gameServ
     
     public async Task ActivateCheckpoint(ActivateCheckpointPacket packet)
     {
+        logger.LogInformation("Received ActivateCheckpoint packet with checkpoint index: {}", packet.CheckpointIndex);
         await gameService.ActivateCheckpointAsync(packet.CheckpointIndex);
     }
 
@@ -93,5 +94,19 @@ public class GameHub(ISessionRepository sessionRepository, IGameService gameServ
             return;
         
         await gameService.UpdatePlayerPositionAsync(player.PlayerId, new Vector2(packet.X, packet.Y));
+    }
+
+    public async Task HurtPlayer()
+    {
+        var session = await sessionRepository.GetSessionByIdAsync(Context.ConnectionId);
+        if (session == null)
+            return;
+        
+        // Get player to update health
+        var player = await gameService.GetPlayerFromSessionAsync(session.Id);
+        if (player == null)
+            return;
+        
+        await gameService.HurtPlayerAsync(player.PlayerId);
     }
 }

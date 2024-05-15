@@ -12,6 +12,7 @@ public interface IGameService
     
     Task ActivateCheckpointAsync(int checkpointIndex);
     Task UpdatePlayerPositionAsync(int playerId, Vector2 position);
+    Task HurtPlayerAsync(int playerId);
     Task TickAsync(float delta, float time, CancellationToken cancellationToken);
     
     Task<Player?> GetPlayerFromSessionAsync(string sessionId);

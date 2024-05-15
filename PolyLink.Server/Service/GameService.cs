@@ -42,11 +42,11 @@ public class GameService(IHubContext<GameHub> hubContext) : IGameService
         return Task.CompletedTask;
     }
 
-    public async Task ActivateCheckpointAsync(int checkpointIndex)
+    public Task ActivateCheckpointAsync(int checkpointIndex)
     {
         if (gameHandler == null)
             throw new InvalidOperationException("Game is not running!");
-        await gameHandler.ActivateCheckpointAsync(checkpointIndex);
+        return gameHandler.ActivateCheckpointAsync(checkpointIndex);
     }
 
     public Task UpdatePlayerPositionAsync(int playerId, Vector2 position)
@@ -56,11 +56,18 @@ public class GameService(IHubContext<GameHub> hubContext) : IGameService
         return gameHandler.UpdatePlayerPositionAsync(playerId, position);
     }
 
-    public async Task TickAsync(float delta, float time, CancellationToken cancellationToken)
+    public Task HurtPlayerAsync(int playerId)
     {
         if (gameHandler == null)
-            return;
-        await gameHandler.TickAsync(delta, time, cancellationToken);
+            throw new InvalidOperationException("Game is not running!");
+        return gameHandler.HurtPlayerAsync(playerId);
+    }
+
+    public Task TickAsync(float delta, float time, CancellationToken cancellationToken)
+    {
+        if (gameHandler == null)
+            return Task.CompletedTask;
+        return gameHandler.TickAsync(delta, time, cancellationToken);
     }
 
     public async Task<Player?> GetPlayerFromSessionAsync(string sessionId)
