@@ -173,14 +173,19 @@ public class PluginProcess : MonoBehaviour
         VGPlayerPatch.PlayerCollide += player =>
         {
             var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
+            
+            // Don't process collision for other players
             if (multiplayerManager.LocalPlayerId != player.PlayerID)
                 return;
+
+            if (player.CanTakeDamage)
+            {
+                // Hurt player
+                SetPlayerHealth(player, player.Health - 1, true);
             
-            // Hurt player
-            SetPlayerHealth(player, player.Health - 1, true);
-            
-            // Send player hurt event
-            hubConnection.SendAsync("HurtPlayer");
+                // Send player hurt event
+                hubConnection.SendAsync("HurtPlayer");
+            }
         };
     }
 
@@ -196,11 +201,13 @@ public class PluginProcess : MonoBehaviour
             .FirstOrDefault(x => x.PlayerID == LazySingleton<MultiplayerManager>.Instance.LocalPlayerId);
         if (localPlayer == null)
             return;
-        if (localPlayer.PlayerObject == null)
+        
+        var playerObject = localPlayer.PlayerObject;
+        if (!playerObject)
             return;
         
         // Send player position
-        var position = localPlayer.PlayerObject.Player_Wrapper.position;
+        var position = playerObject.Player_Wrapper.position;
         hubConnection.SendAsync("UpdatePlayerPosition", new C2SUpdatePlayerPositionPacket
         {
             X = position.x,
