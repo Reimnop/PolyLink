@@ -11,99 +11,32 @@
     <RestoreAdditionalProjectSources>
       https://nuget.bepinex.dev/v3/index.json
     </RestoreAdditionalProjectSources>
+    <GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   
   <PropertyGroup>
-    <GamePath>G:\SteamLibrary\steamapps\common\Project Arrhythmia</GamePath>
+    <GamePath>I:\SteamLibrary\steamapps\common\Project Arrhythmia</GamePath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="HarmonyX" Version="2.10.1" GeneratePathProperty="true" />
-    <PackageReference Include="BepInEx.Core" Version="6.0.0-be.*" IncludeAssets="compile" GeneratePathProperty="true" />
-    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" GeneratePathProperty="true" />
+    <PackageReference Include="Costura.Fody" Version="5.8.0-alpha0097" PrivateAssets="all" />
+    <PackageReference Include="Fody" Version="6.8.1" PrivateAssets="all" />
+    
+    <PackageReference Include="HarmonyX" Version="2.10.1" />
+    <PackageReference Include="BepInEx.Core" Version="6.0.0-be.*" IncludeAssets="compile" />
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
     <PackageReference Include="Iced" Version="1.21.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Connections.Abstractions" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Client" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Connections.Common" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Common" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.Json" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.Features" Version="6.0.29" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.4" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.Extensions.Primitives" Version="6.0.0" GeneratePathProperty="true" />
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" GeneratePathProperty="true" />
-    <PackageReference Include="System.IO.Pipelines" Version="6.0.3" GeneratePathProperty="true" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" GeneratePathProperty="true" />
-    <PackageReference Include="System.Threading.Channels" Version="6.0.0" GeneratePathProperty="true" />
-
-    <!-- Build-time dependencies -->
-    <PackageReference Include="ILRepack" Version="2.0.18" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.31" />
   </ItemGroup>
     
   <Target Name="CopyToGame" AfterTargets="Build" Condition="'$(GamePath)'!='' And '$(Configuration)'=='Debug'">
     <PropertyGroup>
       <CopyTargetDir>$(GamePath)/BepInEx/plugins</CopyTargetDir>
-      <CopyTargetDepsDir>$(GamePath)/BepInEx/plugins/PolyLinkDeps</CopyTargetDepsDir>
     </PropertyGroup>
     <Message Text="Copying build result to $(CopyTargetDir)" Importance="high" />
     <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(CopyTargetDir)" />
-    <Copy SourceFiles="$(OutputPath)PolyLink.Common.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_AspNetCore_Connections_Abstractions)/lib/net6.0/Microsoft.AspNetCore.Connections.Abstractions.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_AspNetCore_Http_Connections_Client)/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Client.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_AspNetCore_Http_Connections_Common)/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Common.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_AspNetCore_SignalR_Client)/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_AspNetCore_SignalR_Client_Core)/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.Core.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_AspNetCore_SignalR_Common)/lib/net6.0/Microsoft.AspNetCore.SignalR.Common.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_AspNetCore_SignalR_Protocols_Json)/lib/net6.0/Microsoft.AspNetCore.SignalR.Protocols.Json.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_Extensions_DependencyInjection)/lib/net6.0/Microsoft.Extensions.DependencyInjection.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_Extensions_DependencyInjection_Abstractions)/lib/net6.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_Extensions_Features)/lib/net6.0/Microsoft.Extensions.Features.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_Extensions_Logging)/lib/netstandard2.1/Microsoft.Extensions.Logging.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_Extensions_Logging_Abstractions)/lib/net6.0/Microsoft.Extensions.Logging.Abstractions.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_Extensions_Options)/lib/netstandard2.1/Microsoft.Extensions.Options.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgMicrosoft_Extensions_Primitives)/lib/net6.0/Microsoft.Extensions.Primitives.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgSystem_Diagnostics_DiagnosticSource)/lib/net6.0/System.Diagnostics.DiagnosticSource.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgSystem_IO_Pipelines)/lib/net6.0/System.IO.Pipelines.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgSystem_Runtime_CompilerServices_Unsafe)/lib/net6.0/System.Runtime.CompilerServices.Unsafe.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-    <Copy SourceFiles="$(PkgSystem_Threading_Channels)/lib/net6.0/System.Threading.Channels.dll" DestinationFolder="$(CopyTargetDepsDir)" />
-  </Target>
-  
-  <Target Name="MergeAssembly" AfterTargets="Build" Condition="'$(Configuration)'=='Release'">
-    <PropertyGroup>
-      <MergedAssemblyName>$(AssemblyName)_$(Version)_Merged</MergedAssemblyName>
-    </PropertyGroup>
-    <Message Text="Merging assemblies into $(MergedAssemblyName).dll" Importance="high" />
-    <Exec Command="$(ILRepack) ^
-        /lib:$(PkgHarmonyX)/lib/netstandard2.0 ^
-        /lib:$(PkgBepInEx_Core)/lib/netstandard2.0 ^
-        /lib:$(PkgBepInEx_Unity_IL2CPP)/lib/net6.0 ^
-        /out:$(OutputPath)$(MergedAssemblyName).dll ^
-        $(OutputPath)$(AssemblyName).dll ^
-        $(OutputPath)PolyLink.Common.dll ^
-        $(PkgMicrosoft_AspNetCore_Connections_Abstractions)/lib/net6.0/Microsoft.AspNetCore.Connections.Abstractions.dll ^
-        $(PkgMicrosoft_AspNetCore_Http_Connections_Client)/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Client.dll ^
-        $(PkgMicrosoft_AspNetCore_Http_Connections_Common)/lib/net6.0/Microsoft.AspNetCore.Http.Connections.Common.dll ^
-        $(PkgMicrosoft_AspNetCore_SignalR_Client)/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.dll ^
-        $(PkgMicrosoft_AspNetCore_SignalR_Client_Core)/lib/net6.0/Microsoft.AspNetCore.SignalR.Client.Core.dll ^
-        $(PkgMicrosoft_AspNetCore_SignalR_Common)/lib/net6.0/Microsoft.AspNetCore.SignalR.Common.dll ^
-        $(PkgMicrosoft_AspNetCore_SignalR_Protocols_Json)/lib/net6.0/Microsoft.AspNetCore.SignalR.Protocols.Json.dll ^
-        $(PkgMicrosoft_Extensions_DependencyInjection)/lib/net6.0/Microsoft.Extensions.DependencyInjection.dll ^
-        $(PkgMicrosoft_Extensions_DependencyInjection_Abstractions)/lib/net6.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll ^
-        $(PkgMicrosoft_Extensions_Features)/lib/net6.0/Microsoft.Extensions.Features.dll ^
-        $(PkgMicrosoft_Extensions_Logging)/lib/netstandard2.1/Microsoft.Extensions.Logging.dll ^
-        $(PkgMicrosoft_Extensions_Logging_Abstractions)/lib/net6.0/Microsoft.Extensions.Logging.Abstractions.dll ^
-        $(PkgMicrosoft_Extensions_Options)/lib/netstandard2.1/Microsoft.Extensions.Options.dll ^
-        $(PkgMicrosoft_Extensions_Primitives)/lib/net6.0/Microsoft.Extensions.Primitives.dll ^
-        $(PkgSystem_Diagnostics_DiagnosticSource)/lib/net6.0/System.Diagnostics.DiagnosticSource.dll ^
-        $(PkgSystem_IO_Pipelines)/lib/net6.0/System.IO.Pipelines.dll ^
-        $(PkgSystem_Runtime_CompilerServices_Unsafe)/lib/net6.0/System.Runtime.CompilerServices.Unsafe.dll ^
-        $(PkgSystem_Threading_Channels)/lib/net6.0/System.Threading.Channels.dll" />
   </Target>
     
   <ItemGroup>
