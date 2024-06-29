@@ -11,8 +11,6 @@
     <RestoreAdditionalProjectSources>
       https://nuget.bepinex.dev/v3/index.json
     </RestoreAdditionalProjectSources>
-    <GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -20,15 +18,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Costura.Fody" Version="5.8.0-alpha0097" PrivateAssets="all" />
-    <PackageReference Include="Fody" Version="6.8.1" PrivateAssets="all" />
-    
     <PackageReference Include="HarmonyX" Version="2.10.1" />
     <PackageReference Include="BepInEx.Core" Version="6.0.0-be.*" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="1.*" />
     <PackageReference Include="Iced" Version="1.21.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.31" />
+
+    <!-- Fody -->
+    <PackageReference Include="Costura.Fody" Version="5.7.0" PrivateAssets="all" />
+    <PackageReference Include="Fody" Version="6.8.1" PrivateAssets="all" />
   </ItemGroup>
     
   <Target Name="CopyToGame" AfterTargets="Build" Condition="'$(GamePath)'!='' And '$(Configuration)'=='Debug'">
