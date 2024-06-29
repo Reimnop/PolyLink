@@ -1,6 +1,5 @@
 using System.Numerics;
 using Microsoft.AspNetCore.SignalR;
-using PolyLink.Common.Packet;
 using PolyLink.Server.Model;
 using PolyLink.Server.SignalR;
 using PolyLink.Server.Util;
@@ -9,40 +8,40 @@ namespace PolyLink.Server.Service;
 
 public class GameHandler
 {
-    private record struct IndividualPlayerData(
-        Vector2 Position, bool PositionChanged, 
-        int Health, bool HealthChanged,
-        bool Dead, bool DeathChanged);
-    
     // TODO: Switch to ConcurrentDictionary when shit hits the fan
     private readonly Dictionary<string, Player> sessionIdToPlayerMap = [];
     private readonly Dictionary<int, Player> playerIdToPlayerMap = [];
-    private readonly Dictionary<int, IndividualPlayerData> playerIdToPlayerDataMap = [];
+    private readonly Dictionary<int, GamePlayer> playerIdToGamePlayerMap = [];
     
     private readonly IHubContext<GameHub> hubContext;
+    private readonly NetworkHandler networkHandler;
 
     private int checkpointIndex;
     private bool checkpointIndexChanged;
     
     public GameHandler(IEnumerable<Session> sessions, IHubContext<GameHub> hubContext)
     {
-        foreach (var (i, session) in sessions.Indexed())
+        this.hubContext = hubContext;
+        
+        var players = sessions
+            .Indexed()
+            .Select(x =>
+                new Player
+                {
+                    PlayerId = x.Index,
+                    SessionId = x.Value.Id,
+                    Name = x.Value.Name,
+                    DisplayName = x.Value.DisplayName
+                })
+            .ToList();
+        networkHandler = new NetworkHandler(hubContext, players);
+        
+        foreach (var player in players)
         {
-            var player = new Player
-            {
-                PlayerId = i,
-                SessionId = session.Id,
-                Name = session.Name,
-                DisplayName = session.DisplayName
-            };
             sessionIdToPlayerMap[player.SessionId] = player;
             playerIdToPlayerMap[player.PlayerId] = player;
-            playerIdToPlayerDataMap[player.PlayerId] = new IndividualPlayerData(
-                Vector2.Zero, false,
-                3, false,
-                false, false);
+            playerIdToGamePlayerMap[player.PlayerId] = new GamePlayer(player, networkHandler);
         }
-        this.hubContext = hubContext;
     }
     
     public Task ActivateCheckpointAsync(int checkpointIndex)
@@ -60,17 +59,16 @@ public class GameHandler
         var player = await GetPlayerFromPlayerIdAsync(playerId);
         if (player == null)
             return;
-        var playerData = playerIdToPlayerDataMap[playerId];
-        playerIdToPlayerDataMap[playerId] = playerData with { Position = position, PositionChanged = true };
+        var gamePlayer = playerIdToGamePlayerMap[playerId];
+        gamePlayer.Position = position;
     }
     
     public Task HurtPlayerAsync(int playerId)
     {
-        var playerData = playerIdToPlayerDataMap[playerId];
-        var newHealth = playerData.Health - 1;
-        playerIdToPlayerDataMap[playerId] = playerData with { Health = newHealth, HealthChanged = true };
-        if (newHealth == 0)
-            playerIdToPlayerDataMap[playerId] = playerData with { Dead = true, DeathChanged = true };
+        var gamePlayer = playerIdToGamePlayerMap[playerId];
+        var newHealth = Math.Max(gamePlayer.Health - 1, 0); // Make sure health doesn't go below 0
+        gamePlayer.Health = newHealth;
+        gamePlayer.Dead = newHealth <= 0;
         return Task.CompletedTask;
     }
     
@@ -80,65 +78,23 @@ public class GameHandler
         if (checkpointIndexChanged)
         {
             checkpointIndexChanged = false;
-            await SendPacketToAllClientsAsync("ActivateCheckpoint", new ActivateCheckpointPacket
-            {
-                CheckpointIndex = checkpointIndex
-            }, cancellationToken);
+            await networkHandler.BroadcastActivateCheckpointPacket(checkpointIndex, cancellationToken: cancellationToken);
         }
         
-        // If player positions changed, broadcast to clients
-        foreach (var playerId in playerIdToPlayerMap.Keys)
-        {
-            if (!playerIdToPlayerDataMap.TryGetValue(playerId, out var playerData))
-                continue;
-            if (!playerData.PositionChanged)
-                continue;
-            
-            await SendPacketToAllClientsAsync("UpdatePlayerPosition", new S2CUpdatePlayerPositionPacket
-            {
-                PlayerId = playerId,
-                X = playerData.Position.X,
-                Y = playerData.Position.Y
-            }, cancellationToken);
-            
-            playerIdToPlayerDataMap[playerId] = playerData with { PositionChanged = false };
-        }
+        // Update all players
+        foreach (var gamePlayer in playerIdToGamePlayerMap.Values)
+            await gamePlayer.TickAsync(delta, time, cancellationToken);
         
-        // If player health changed, broadcast to clients
-        foreach (var playerId in playerIdToPlayerMap.Keys)
+        // If all players are dead, rewind game and silently set all players to alive
+        if (playerIdToGamePlayerMap.Values.All(p => p.Dead))
         {
-            if (!playerIdToPlayerDataMap.TryGetValue(playerId, out var playerData))
-                continue;
-            if (!playerData.HealthChanged)
-                continue;
-            
-            await SendPacketToAllClientsAsync("SetPlayerHealth", new SetPlayerHealthPacket
+            foreach (var gamePlayer in playerIdToGamePlayerMap.Values)
             {
-                PlayerId = playerId,
-                Health = playerData.Health,
-                PlayHurtAnimation = true
-            }, cancellationToken);
-            
-            playerIdToPlayerDataMap[playerId] = playerData with { HealthChanged = false };
-        }
-        
-        // If player died, broadcast to clients
-        foreach (var playerId in playerIdToPlayerMap.Keys)
-        {
-            if (!playerIdToPlayerDataMap.TryGetValue(playerId, out var playerData))
-                continue;
-            if (!playerData.DeathChanged)
-                continue;
-
-            if (playerData.Dead)
-            {
-                await SendPacketToAllClientsAsync("KillPlayer", new KillPlayerPacket
-                {
-                    PlayerId = playerId
-                }, cancellationToken);
+                gamePlayer.SilentlySetDead(false);
+                gamePlayer.SilentlySetHealth(3);
             }
             
-            playerIdToPlayerDataMap[playerId] = playerData with { DeathChanged = false };
+            await networkHandler.BroadcastRewindToCheckpointPacket(checkpointIndex, cancellationToken: cancellationToken);
         }
     }
     
@@ -159,12 +115,5 @@ public class GameHandler
     public IEnumerable<Player> GetPlayers()
     {
         return playerIdToPlayerMap.Values;
-    }
-
-    private Task SendPacketToAllClientsAsync<T>(string methodName, T packet, CancellationToken cancellationToken = default)
-    {
-        return hubContext.Clients
-            .Clients(GetPlayers().Select(x => x.SessionId))
-            .SendAsync(methodName, packet, cancellationToken);
     }
 }

@@ -96,13 +96,10 @@ public class PluginProcess : MonoBehaviour
                 }
 
                 var player = playerData.PlayerObject;
-                player.Health = 0;
                 
                 // yes pidge, your naming conventions are still bad
                 // please fix them asap
-                player.DeathEvent?.Invoke(player.Player_Wrapper.position);
-                player.PlayerDeath();
-                player.PlayerDeathAnimation();
+                SetPlayerHealth(player, 0, true);
             });
         });
 
@@ -135,11 +132,6 @@ public class PluginProcess : MonoBehaviour
             
             actions.Enqueue(() =>
             {
-                // Skip if player id is local player
-                var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
-                if (packet.PlayerId == multiplayerManager.LocalPlayerId)
-                    return;
-                
                 var playerData = VGPlayerManager.Inst.players
                     .ToEnumerable()
                     .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
@@ -232,14 +224,25 @@ public class PluginProcess : MonoBehaviour
         if (oldHealth > newHealth)
         {
             // pidge please fix your naming conventions
-            player.HitEvent?.Invoke(player.Health, player.Player_Wrapper.position);
+            if (newHealth > 0)
+                player.HitEvent?.Invoke(player.Health, player.Player_Wrapper.position);
+            else
+                player.DeathEvent?.Invoke(player.Player_Wrapper.position);
 
             if (playHurtAnimation)
             {
-                player.StartHurtDecay();
-                AudioManager.Inst.ApplyLowPass(0.05f, 0.4f, 1.0f);
-                AudioManager.Inst.PlaySound("HurtPlayer");
-                player.PlayerHitAnimation();
+                if (newHealth > 0)
+                {
+                    player.StartHurtDecay();
+                    AudioManager.Inst.ApplyLowPass(0.05f, 0.4f, 1.0f);
+                    AudioManager.Inst.PlaySound("HurtPlayer");
+                    player.PlayerHitAnimation();
+                }
+                else
+                {
+                    player.PlayerDeath();
+                    player.PlayerDeathAnimation();
+                }
             }
         }
     }
