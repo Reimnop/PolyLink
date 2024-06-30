@@ -15,6 +15,6 @@ public class VGPlayerManagerPatch
     
     private static void OnPlayerDeath(Vector3 position)
     {
-        Log.Info($"Player died at {position}!!!");
+        Log.Info($"Player died at {position}");
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.SignalR.Client;
 using PolyLink.Common.Packet;
@@ -15,12 +16,21 @@ public class PluginProcess : MonoBehaviour
     private HubConnection hubConnection = null!;
 
     private readonly ConcurrentQueue<Action> actions = [];
+
+    private readonly Dictionary<int, int> paPlayerIdToPlayerId = [];
+    private readonly Dictionary<int, int> playerIdToPaPlayerId = [];
     
     private void Start()
     {
+        // Generate a random name
+        var random = new System.Random();
+        var name = $"player_{random.Next(1000, 9999)}";
+        
+        Log.Info($"Your username is {name}");
+        
         // Initialize SignalR
         hubConnection = new HubConnectionBuilder()
-            .WithUrl("http://localhost:5291/game?name=reimnop&displayName=Reimnop")
+            .WithUrl($"https://polylink.parctan.com/game?name={name}&displayName={name}")
             .Build();
         
         hubConnection.On<StartGamePacket>("StartGame", packet =>
@@ -43,16 +53,34 @@ public class PluginProcess : MonoBehaviour
                 var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
                 multiplayerManager.SetData(packet.LocalPlayerId, packet.Players);
 
+                var playerInfos = packet.Players.ToList();
+
                 VGPlayerManager.Inst.players.Clear();
-                foreach (var playerInfo in packet.Players)
+                foreach (var (i, playerInfo) in playerInfos.Indexed())
                 {
                     Log.Info($"Player: {playerInfo.DisplayName}");
                     var vgPlayerData = new VGPlayerManager.VGPlayerData
                     {
-                        PlayerID = playerInfo.Id,
-                        ControllerID = packet.LocalPlayerId == playerInfo.Id ? 0 : -1
+                        PlayerID = i
                     };
                     VGPlayerManager.Inst.players.Add(vgPlayerData);
+                }
+                
+                // Set player ids
+                paPlayerIdToPlayerId[0] = packet.LocalPlayerId; // Local player must be in front
+                
+                // Set the rest of the player ids
+                foreach (var (i, playerInfo) in playerInfos
+                             .Where(x => x.Id != packet.LocalPlayerId)
+                             .Indexed())
+                {
+                    paPlayerIdToPlayerId[i + 1] = playerInfo.Id;
+                }
+                
+                // Set the reverse map
+                foreach (var (paPlayerId, playerId) in paPlayerIdToPlayerId)
+                {
+                    playerIdToPaPlayerId[playerId] = paPlayerId;
                 }
                 
                 SaveManager.Inst.CurrentArcadeLevel = level;
@@ -68,7 +96,7 @@ public class PluginProcess : MonoBehaviour
             {
                 var playerData = VGPlayerManager.Inst.players
                     .ToEnumerable()
-                    .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
+                    .FirstOrDefault(x => x.PlayerID == playerIdToPaPlayerId[packet.PlayerId]);
                 if (playerData == null)
                 {
                     Log.Error("Player not found!");
@@ -88,7 +116,7 @@ public class PluginProcess : MonoBehaviour
             {
                 var playerData = VGPlayerManager.Inst.players
                     .ToEnumerable()
-                    .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
+                    .FirstOrDefault(x => x.PlayerID == playerIdToPaPlayerId[packet.PlayerId]);
                 if (playerData == null)
                 {
                     Log.Error("Player not found!");
@@ -134,7 +162,7 @@ public class PluginProcess : MonoBehaviour
             {
                 var playerData = VGPlayerManager.Inst.players
                     .ToEnumerable()
-                    .FirstOrDefault(x => x.PlayerID == packet.PlayerId);
+                    .FirstOrDefault(x => x.PlayerID == playerIdToPaPlayerId[packet.PlayerId]);
                 
                 if (playerData == null)
                 {
@@ -143,8 +171,22 @@ public class PluginProcess : MonoBehaviour
                 }
                 
                 var player = playerData.PlayerObject;
-                var oldPosition = player.Player_Wrapper.position;
-                player.Player_Wrapper.position = new Vector3(packet.X, packet.Y, oldPosition.z);
+                if (!player)
+                    return;
+                if (!player.Player_Rigidbody)
+                    return;
+                
+                var oldPosition = player.Player_Rigidbody.position;
+                var newPosition = new Vector2(packet.X, packet.Y);
+                player.Player_Rigidbody.position = newPosition;
+                
+                var delta = newPosition - oldPosition;
+                if (delta.sqrMagnitude > 0.0001f)
+                {
+                    delta.Normalize();
+                    player.p_lastMoveX = delta.x;
+                    player.p_lastMoveY = delta.y;
+                }
             });
         });
 
@@ -167,7 +209,7 @@ public class PluginProcess : MonoBehaviour
             var multiplayerManager = LazySingleton<MultiplayerManager>.Instance;
             
             // Don't process collision for other players
-            if (multiplayerManager.LocalPlayerId != player.PlayerID)
+            if (multiplayerManager.LocalPlayerId != paPlayerIdToPlayerId[player.PlayerID])
                 return;
 
             if (player.CanTakeDamage)
@@ -190,7 +232,7 @@ public class PluginProcess : MonoBehaviour
         // Get local player
         var localPlayer = VGPlayerManager.Inst.players
             .ToEnumerable()
-            .FirstOrDefault(x => x.PlayerID == LazySingleton<MultiplayerManager>.Instance.LocalPlayerId);
+            .FirstOrDefault(x => x.PlayerID == playerIdToPaPlayerId[LazySingleton<MultiplayerManager>.Instance.LocalPlayerId]);
         if (localPlayer == null)
             return;
         
@@ -199,7 +241,7 @@ public class PluginProcess : MonoBehaviour
             return;
         
         // Send player position
-        var position = playerObject.Player_Wrapper.position;
+        var position = playerObject.Player_Rigidbody.position;
         hubConnection.SendAsync("UpdatePlayerPosition", new C2SUpdatePlayerPositionPacket
         {
             X = position.x,

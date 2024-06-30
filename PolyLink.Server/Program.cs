@@ -26,8 +26,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
-app.UseHttpsRedirection();
 app.MapHub<GameHub>("/game");
 
 var gameServer = new GameServer(app);
-await gameServer.RunAsync(CancellationToken.None);
+await gameServer.RunAsync();

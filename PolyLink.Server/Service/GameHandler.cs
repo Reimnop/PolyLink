@@ -74,11 +74,17 @@ public class GameHandler
     
     public async Task TickAsync(float delta, float time, CancellationToken cancellationToken)
     {
-        // If checkpoint index changed, broadcast to clients
+        // If checkpoint index changed, broadcast to clients, then revive all players
         if (checkpointIndexChanged)
         {
             checkpointIndexChanged = false;
             await networkHandler.BroadcastActivateCheckpointPacket(checkpointIndex, cancellationToken: cancellationToken);
+            
+            foreach (var gamePlayer in playerIdToGamePlayerMap.Values.Where(gamePlayer => gamePlayer.Dead))
+            {
+                gamePlayer.SilentlySetDead(false);
+                gamePlayer.SilentlySetHealth(3);
+            }
         }
         
         // Update all players

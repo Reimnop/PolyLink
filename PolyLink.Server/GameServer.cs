@@ -2,18 +2,11 @@ using System.Diagnostics;
 
 namespace PolyLink.Server.Service;
 
-public class GameServer
+public class GameServer(WebApplication webApplication)
 {
     private delegate Task LoopedTaskFactory(float delta, float time, CancellationToken cancellationToken);
-    
-    private readonly WebApplication webApplication;
 
-    public GameServer(WebApplication webApplication)
-    {
-        this.webApplication = webApplication; 
-    }
-
-    public async Task RunAsync(CancellationToken cancellationToken)
+    public async Task RunAsync(CancellationToken cancellationToken = default)
     {
         var gameLoop = FixedRateLoop(UpdateGameLogicAsync, cancellationToken);
         var webAppRun = webApplication.RunAsync(cancellationToken);
@@ -22,7 +15,7 @@ public class GameServer
 
     private async Task FixedRateLoop(LoopedTaskFactory loopedTaskFactory, CancellationToken cancellationToken)
     {
-        const float tickRate = 0.05f; // 20 ticks per second
+        const float tickRate = 0.025f; // 40 ticks per second
         
         var stopwatch = Stopwatch.StartNew();
         var lastTime = 0.0f;
