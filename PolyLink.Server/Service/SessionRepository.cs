@@ -18,14 +18,14 @@ public class SessionRepository(PolyLinkContext context) : ISessionRepository
         await context.SaveChangesAsync();
     }
     
-    public async Task<Session?> GetSessionByIdAsync(string id)
+    public Task<Session?> GetSessionByClientIdAsync(ulong clientId)
     {
-        return await context.Sessions.FirstOrDefaultAsync(x => x.Id == id);
+        return context.Sessions.FirstOrDefaultAsync(x => x.ClientId == clientId);
     }
-
-    public async Task<Session?> GetSessionByNameAsync(string name)
+    
+    public async Task<Session?> GetSessionByConnectionIdAsync(string connectionId)
     {
-        return await context.Sessions.FirstOrDefaultAsync(x => x.Name == name);
+        return await context.Sessions.FirstOrDefaultAsync(x => x.ConnectionId == connectionId);
     }
 
     public async Task<int> GetSessionCountAsync()

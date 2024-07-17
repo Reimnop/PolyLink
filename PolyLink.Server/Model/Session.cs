@@ -1,8 +1,11 @@
-﻿namespace PolyLink.Server.Model;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace PolyLink.Server.Model;
 
 public class Session
 {
-    public required string Id { get; set; }
-    public required string Name { get; set; }
+    [Key]
+    public required ulong ClientId { get; set; }
+    public required string ConnectionId { get; set; }
     public required string DisplayName { get; set; }
 }

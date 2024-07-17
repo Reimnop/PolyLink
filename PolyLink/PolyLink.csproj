@@ -18,6 +18,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="HarmonyX" Version="2.10.1" />
     <PackageReference Include="BepInEx.Core" Version="6.0.0-be.*" IncludeAssets="compile" />
     <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.*" IncludeAssets="compile" />
@@ -36,9 +40,13 @@
     </PropertyGroup>
     <Message Text="Copying build result to $(CopyTargetDir)" Importance="high" />
     <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(CopyTargetDir)" />
+    <Copy SourceFiles="$(OutputPath)Parctan.Modding.Localization.dll" DestinationFolder="$(CopyTargetDir)" />
   </Target>
     
   <ItemGroup>
+    <Reference Include="Parctan.Modding.Localization">
+      <HintPath>External/Parctan.Modding.Localization.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp">
       <HintPath>External/Assembly-CSharp.dll</HintPath>
     </Reference>
@@ -419,8 +427,4 @@
   <ItemGroup>
     <ProjectReference Include="../PolyLink.Common/PolyLink.Common.csproj" />
   </ItemGroup>
-
-  <!-- Kinda hacky, but it works -->
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

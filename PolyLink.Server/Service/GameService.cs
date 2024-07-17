@@ -20,7 +20,7 @@ public class GameService(IHubContext<GameHub> hubContext) : IGameService
         gameHandler = new GameHandler(sessions, hubContext);
         foreach (var player in gameHandler.GetPlayers())
         {
-            var client = hubContext.Clients.Client(player.SessionId);
+            var client = hubContext.Clients.Client(player.ConnectionId);
             await client.SendAsync("StartGame", new StartGamePacket
             {
                 LevelId = levelId,

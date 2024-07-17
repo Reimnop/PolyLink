@@ -101,7 +101,7 @@ public class NetworkHandler(IHubContext<GameHub> hubContext, IEnumerable<Player>
         return hubContext.Clients
             .Clients(players
                 .Where(x => playerIdPredicate?.Invoke(x.PlayerId) ?? true)
-                .Select(x => x.SessionId))
+                .Select(x => x.ConnectionId))
             .SendAsync(methodName, packet, cancellationToken);
     }
 }

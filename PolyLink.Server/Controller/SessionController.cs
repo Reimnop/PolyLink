@@ -21,7 +21,8 @@ public class SessionController(ISessionRepository sessionRepository) : Controlle
         return Ok(sessionRepository.GetSessionsAsync()
             .Select(x => new
             {
-                x.Name, 
+                Id = x.ConnectionId,
+                x.ClientId,
                 x.DisplayName
             }));
     }

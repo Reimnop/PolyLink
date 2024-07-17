@@ -1,6 +1,9 @@
-﻿using BepInEx;
+﻿using System.Reflection;
+using BepInEx;
 using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
+using Parctan.Modding.Localization;
+using PolyLink.Ui;
 
 namespace PolyLink;
 
@@ -17,7 +20,19 @@ public class Plugin : BasePlugin
         
         harmony = new Harmony(PluginInfo.PLUGIN_GUID);
         harmony.PatchAll();
+        
+        // Register i18n files
+        LocalizationManager.Register(Assembly.GetExecutingAssembly(), "Resources.I18n", "PolyLink");
+        
+        // Register main menu UI
+        Menu.Register();
 
-        AddComponent<PluginProcess>();
+        // AddComponent<PluginProcess>();
+        
+        // SceneLoaderPatch.RegisterLoader("PolyLink", async () =>
+        // {
+        //     SteamClient.Init(AppId);
+        //     await Loader.LoadAsync();
+        // });
     }
 }

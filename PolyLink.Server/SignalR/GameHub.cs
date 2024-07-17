@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.SignalR;
 using PolyLink.Common.Packet;
 using PolyLink.Server.Model;
 using PolyLink.Server.Service;
-using PolyLink.Server.Util;
 
 namespace PolyLink.Server.SignalR;
 
@@ -19,39 +18,45 @@ public class GameHub(ISessionRepository sessionRepository, IGameService gameServ
             return;
         }
         
-        var nameValues = httpContext.Request.Query["name"];
+        var clientIdValues = httpContext.Request.Query["clientId"];
         var displayNameValues = httpContext.Request.Query["displayName"];
-
-        var name = nameValues.Count > 0 ? nameValues[0] : null;
+        
+        var clientIdString = clientIdValues.Count > 0 ? clientIdValues[0] : null;
         var displayName = displayNameValues.Count > 0 ? displayNameValues[0] : null;
         
-        // Check if either name or display name is null
-        if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(displayName))
+        // Check if client ID is null
+        if (string.IsNullOrWhiteSpace(clientIdString))
         {
             Context.Abort();
             return;
         }
         
-        // Check if name is valid
-        if (!RegexHelper.NameValidator().IsMatch(name))
+        // Check if client ID is valid
+        if (!ulong.TryParse(clientIdString, out var clientId))
+        {
+            Context.Abort();
+            return;
+        }
+        
+        // Check if display name is null
+        if (string.IsNullOrWhiteSpace(displayName))
         {
             Context.Abort();
             return;
         }
         
         // Check if there's an existing session
-        if (await sessionRepository.GetSessionByNameAsync(name) != null)
+        if (await sessionRepository.GetSessionByClientIdAsync(clientId) != null)
         {
             Context.Abort();
             return;
         }
         
-        // Get SignalR client
-        var id = Context.ConnectionId;
+        // Create SignalR session instance
         var session = new Session
         {
-            Id = id,
-            Name = name,
+            ClientId = clientId,
+            ConnectionId = Context.ConnectionId,
             DisplayName = displayName
         };
         
@@ -65,8 +70,8 @@ public class GameHub(ISessionRepository sessionRepository, IGameService gameServ
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var id = Context.ConnectionId;
-        var session = await sessionRepository.GetSessionByIdAsync(id);
+        var connectionId = Context.ConnectionId;
+        var session = await sessionRepository.GetSessionByConnectionIdAsync(connectionId);
         if (session == null)
             return;
         await sessionRepository.RemoveSessionAsync(session);
@@ -78,18 +83,18 @@ public class GameHub(ISessionRepository sessionRepository, IGameService gameServ
     
     public async Task ActivateCheckpoint(ActivateCheckpointPacket packet)
     {
-        logger.LogInformation("Received ActivateCheckpoint packet with checkpoint index: {}", packet.CheckpointIndex);
         await gameService.ActivateCheckpointAsync(packet.CheckpointIndex);
     }
 
     public async Task UpdatePlayerPosition(C2SUpdatePlayerPositionPacket packet)
     {
-        var session = await sessionRepository.GetSessionByIdAsync(Context.ConnectionId);
+        // Get session
+        var session = await sessionRepository.GetSessionByConnectionIdAsync(Context.ConnectionId);
         if (session == null)
             return;
         
         // Get player to update position
-        var player = await gameService.GetPlayerFromSessionAsync(session.Id);
+        var player = await gameService.GetPlayerFromSessionAsync(session.ConnectionId);
         if (player == null)
             return;
         
@@ -98,12 +103,13 @@ public class GameHub(ISessionRepository sessionRepository, IGameService gameServ
 
     public async Task HurtPlayer()
     {
-        var session = await sessionRepository.GetSessionByIdAsync(Context.ConnectionId);
+        // Get session
+        var session = await sessionRepository.GetSessionByConnectionIdAsync(Context.ConnectionId);
         if (session == null)
             return;
         
         // Get player to update health
-        var player = await gameService.GetPlayerFromSessionAsync(session.Id);
+        var player = await gameService.GetPlayerFromSessionAsync(session.ConnectionId);
         if (player == null)
             return;
         

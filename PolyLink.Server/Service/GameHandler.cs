@@ -29,8 +29,7 @@ public class GameHandler
                 new Player
                 {
                     PlayerId = x.Index,
-                    SessionId = x.Value.Id,
-                    Name = x.Value.Name,
+                    ConnectionId = x.Value.ConnectionId,
                     DisplayName = x.Value.DisplayName
                 })
             .ToList();
@@ -38,7 +37,7 @@ public class GameHandler
         
         foreach (var player in players)
         {
-            sessionIdToPlayerMap[player.SessionId] = player;
+            sessionIdToPlayerMap[player.ConnectionId] = player;
             playerIdToPlayerMap[player.PlayerId] = player;
             playerIdToGamePlayerMap[player.PlayerId] = new GamePlayer(player, networkHandler);
         }
